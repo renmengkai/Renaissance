@@ -1,5 +1,9 @@
 # 文艺复兴 (Renaissance)
 
+[![Flutter Version](https://img.shields.io/badge/Flutter-3.27%2B-blueflutter.dev)
+[![License:.svg)](https:// MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+[![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey.svg)](#)
+
 > 一个承载情感的音乐容器，让老歌的旋律在现代技术中通过"延迟满足"和"氛围重塑"重新焕发生命力。
 
 ## ✨ 核心特性
@@ -71,8 +75,13 @@ lib/
 ## 🚀 快速开始
 
 ### 环境要求
-- Flutter SDK >= 3.27.0
-- Dart SDK >= 3.0.0
+
+| 工具 | 版本要求 |
+|------|----------|
+| Flutter SDK | >= 3.27.0 |
+| Dart SDK | >= 3.0.0 |
+| Visual Studio 2022 | Windows 构建必需 |
+| Xcode | macOS 构建必需 |
 
 ### 依赖版本说明
 
@@ -144,7 +153,7 @@ windows/
 1. **确保已启用开发者模式**
    ```powershell
    # 以管理员身份运行 PowerShell
-   reg add "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\AppModelUnlock" /t REG_DWORD /f /v "AllowDevelopmentWithoutDevLicense" /d "1"
+   reg add "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\AppModelUnlock" /t REG_DWORD /f /v "AllowDevelopmentWithoutDevLicense" /d 1
    ```
    或通过设置界面：设置 → 隐私和安全性 → 开发者模式 → 开启
 
@@ -210,15 +219,44 @@ flutter build linux
 5. **查收信件**：歌曲播放完毕后，如果有黄金信件会弹出通知
 6. **阅读感悟**：点击信件徽章，3D 翻转查看陌生人的故事
 
+## 🗺️ 路线图
+
+### 已完成 ✅
+- [x] Lo-Fi 三轨混音台
+- [x] 盲盒旋律播放模式
+- [x] 迷雾封层效果
+- [x] 黄金信件基础功能
+- [x] Windows 桌面支持
+
+### 开发中 🚧
+- [ ] macOS/Linux 桌面支持优化
+- [ ] 粒子效果性能优化
+
+### 计划中 📋
+- [ ] 移动端适配 (iOS/Android)
+- [ ] Supabase 后端集成
+- [ ] 云端信件同步
+- [ ] 用户认证系统
+
 ## 🎨 设计哲学
 
 - **温度 (Warmth)**：拒绝冰冷的数字化列表，模拟物理世界的阻尼感和材质感
 - **仪式 (Ritual)**：听歌不仅仅是点击，而是通过"等待"和"探索"获得共鸣
 - **纯粹 (Purity)**：弱化社交压力，强化人与旋律、人与文字的跨时空连接
 
+## 🤝 贡献指南
+
+欢迎贡献代码！请遵循以下步骤：
+
+1. Fork 本仓库
+2. 创建特性分支 (`git checkout -b feature/amazing-feature`)
+3. 提交更改 (`git commit -m 'Add some amazing feature'`)
+4. 推送分支 (`git push origin feature/amazing-feature`)
+5. 打开 Pull Request
+
 ## 📄 许可证
 
-MIT License
+MIT License - 查看 [LICENSE](LICENSE) 文件了解详情。
 
 ---
 
