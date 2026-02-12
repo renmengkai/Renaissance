@@ -90,10 +90,9 @@ class MixerPanel extends ConsumerWidget {
                   onChanged: mixer.setWhiteNoiseVolume,
                 ),
                 const SizedBox(height: 16),
-                Divider(
-                  style: DividerThemeData(
-                    direction: Axis.horizontal,
-                  ),
+                Container(
+                  height: 1,
+                  color: AppTheme.warmBrown.withOpacity(0.2),
                 ),
                 const SizedBox(height: 16),
               ],
@@ -122,10 +121,9 @@ class MixerPanel extends ConsumerWidget {
                   );
                 }),
                 const SizedBox(height: 16),
-                Divider(
-                  style: DividerThemeData(
-                    direction: Axis.horizontal,
-                  ),
+                Container(
+                  height: 1,
+                  color: AppTheme.warmBrown.withOpacity(0.2),
                 ),
                 const SizedBox(height: 16),
               ],
@@ -397,7 +395,7 @@ class MixerPanel extends ConsumerWidget {
       case WhiteNoiseCategory.village:
         return FluentIcons.home;
       case WhiteNoiseCategory.ocean:
-        return FluentIcons.drink;
+        return FluentIcons.rain;
       case WhiteNoiseCategory.street:
         return FluentIcons.people;
     }

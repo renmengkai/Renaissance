@@ -72,7 +72,7 @@ class LocalMusicService {
     return musicDir.path;
   }
 
-  /// 扫描本地音乐文件
+  /// 扫描本地音乐文件（快速扫描，不等待封面加载）
   static Future<List<Song>> scanLocalSongs() async {
     final List<Song> songs = [];
 
@@ -92,7 +92,7 @@ class LocalMusicService {
           final ext = path.extension(entity.path).toLowerCase();
           if (_supportedExtensions.contains(ext)) {
             final fileName = path.basenameWithoutExtension(entity.path);
-            final song = await _createSongFromFile(entity.path, fileName, songs.length);
+            final song = _createSongFromFileQuick(entity.path, fileName, songs.length);
             songs.add(song);
             debugPrint('Found song: ${song.title} - ${song.audioUrl}');
           }
@@ -115,9 +115,8 @@ class LocalMusicService {
     return songs;
   }
 
-  /// 从文件创建 Song 对象
-  static Future<Song> _createSongFromFile(String filePath, String fileName, int index) async {
-    // 尝试从文件名解析歌曲信息（格式：艺术家 - 歌曲名）
+  /// 快速创建 Song 对象（不等待封面加载）
+  static Song _createSongFromFileQuick(String filePath, String fileName, int index) {
     String title = fileName;
     String artist = '未知艺术家';
     String album = '本地音乐';
@@ -128,7 +127,6 @@ class LocalMusicService {
       title = parts[1].trim();
     }
 
-    // 为不同歌曲分配不同颜色
     final colors = [
       '#4ECDC4',
       '#2C3E50',
@@ -141,9 +139,11 @@ class LocalMusicService {
     ];
     final color = colors[index % colors.length];
 
-    // 创建临时Song对象用于获取封面
-    final tempSong = Song(
-      id: 'local_$index',
+    // 使用文件路径的 hash 作为唯一 ID，避免和备选歌曲冲突
+    final uniqueId = 'local_file_${filePath.hashCode}';
+
+    return Song(
+      id: uniqueId,
       title: title,
       artist: artist,
       album: album,
@@ -154,23 +154,20 @@ class LocalMusicService {
       dominantColor: color,
       hasGoldenLetter: index < 3,
     );
+  }
 
-    // 获取封面（异步）
-    final coverArtService = CoverArtService();
-    final coverUrl = await coverArtService.getCoverArt(tempSong);
-
-    return Song(
-      id: 'local_$index',
-      title: title,
-      artist: artist,
-      album: album,
-      year: DateTime.now().year,
-      coverUrl: coverUrl,
-      audioUrl: filePath,
-      duration: const Duration(minutes: 3, seconds: 30),
-      dominantColor: color,
-      hasGoldenLetter: index < 3,
-    );
+  /// 异步加载歌曲封面
+  static Future<String> loadSongCoverArt(Song song) async {
+    try {
+      final coverArtService = CoverArtService();
+      return await coverArtService.getCoverArt(song).timeout(
+        const Duration(seconds: 5),
+        onTimeout: () => song.coverUrl,
+      );
+    } catch (e) {
+      debugPrint('Error loading cover art: $e');
+      return song.coverUrl;
+    }
   }
 
   /// 获取备选歌曲（当本地没有歌曲时使用）

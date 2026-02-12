@@ -74,10 +74,9 @@ class CoverArtService {
     return '${identifier}_cover.jpg';
   }
 
-  /// 从音频文件提取内嵌封面
+  /// 从音频文件提取内嵌封面（带超时控制）
   Future<Uint8List?> _extractEmbeddedCover(String audioPath) async {
     try {
-      // 检查是否是本地文件路径
       if (audioPath.startsWith('assets/')) {
         return null;
       }
@@ -87,24 +86,38 @@ class CoverArtService {
         return null;
       }
 
-      // 读取音频文件并提取封面
-      final bytes = await file.readAsBytes();
-      final ext = path.extension(audioPath).toLowerCase();
-
-      switch (ext) {
-        case '.mp3':
-          return _extractMp3Cover(bytes);
-        case '.flac':
-          return _extractFlacCover(bytes);
-        case '.m4a':
-        case '.mp4':
-          return _extractMp4Cover(bytes);
-        default:
-          return null;
+      final fileSize = await file.length();
+      if (fileSize > 50 * 1024 * 1024) {
+        debugPrint('File too large for cover extraction: $audioPath');
+        return null;
       }
+
+      final result = await _extractEmbeddedCoverAsync(file).timeout(
+        const Duration(seconds: 2),
+        onTimeout: () => null,
+      );
+      return result;
     } catch (e) {
       debugPrint('Error extracting embedded cover: $e');
       return null;
+    }
+  }
+
+  /// 异步提取内嵌封面
+  Future<Uint8List?> _extractEmbeddedCoverAsync(File file) async {
+    final bytes = await file.readAsBytes();
+    final ext = path.extension(file.path).toLowerCase();
+
+    switch (ext) {
+      case '.mp3':
+        return _extractMp3Cover(bytes);
+      case '.flac':
+        return _extractFlacCover(bytes);
+      case '.m4a':
+      case '.mp4':
+        return _extractMp4Cover(bytes);
+      default:
+        return null;
     }
   }
 
@@ -290,9 +303,8 @@ class CoverArtService {
     return null;
   }
 
-  /// 在线搜索封面
+  /// 在线搜索封面（带超时控制）
   Future<Uint8List?> _searchOnlineCover(Song song) async {
-    // 尝试多个API源
     final sources = [
       _searchFromMusicBrainz,
       _searchFromLastFm,
@@ -301,7 +313,10 @@ class CoverArtService {
 
     for (final source in sources) {
       try {
-        final cover = await source(song);
+        final cover = await source(song).timeout(
+          const Duration(seconds: 3),
+          onTimeout: () => null,
+        );
         if (cover != null) return cover;
       } catch (e) {
         debugPrint('Error searching cover from ${source.toString()}: $e');

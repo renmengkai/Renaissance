@@ -90,6 +90,18 @@ class PlaylistController extends StateNotifier<PlaylistState> {
     state = state.copyWith(repeatMode: modes[nextIndex]);
   }
 
+  // 切换播放模式（顺序 -> 随机 -> 盲盒 -> 顺序）
+  void togglePlayMode() {
+    final modes = PlayMode.values;
+    final nextIndex = (modes.indexOf(state.playMode) + 1) % modes.length;
+    state = state.copyWith(playMode: modes[nextIndex]);
+  }
+
+  // 设置播放模式
+  void setPlayMode(PlayMode mode) {
+    state = state.copyWith(playMode: mode);
+  }
+
   // 创建新播放列表
   void createPlaylist(String name, {String? description}) {
     final newPlaylist = Playlist(

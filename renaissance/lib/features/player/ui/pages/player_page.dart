@@ -1,5 +1,5 @@
 import 'package:fluent_ui/fluent_ui.dart';
-import 'package:flutter/material.dart' hide Slider, IconButton, Divider, Colors, showDialog;
+import 'package:flutter/material.dart' hide Slider, IconButton, Divider, Colors, showDialog, Tooltip;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:window_manager/window_manager.dart';
@@ -11,7 +11,9 @@ import '../../../golden_letter/ui/write_letter_dialog.dart';
 import '../../../lofi_engine/mixer/lofi_mixer.dart';
 import '../../../lofi_engine/mixer/mixer_panel.dart';
 import '../../audio/audio_controller.dart';
+import '../../audio/playlist_controller.dart';
 import '../../models/song.dart';
+import '../../models/playlist.dart';
 import '../../services/local_music_service.dart';
 
 // Type alias for backward compatibility
@@ -31,9 +33,14 @@ class _PlayerPageState extends ConsumerState<PlayerPage> {
   bool _isLoading = true;
   String? _musicDirectoryPath;
   
-  // 进度条拖动状态
+  String? _currentCoverPath;
+  bool _isLoadingCover = false;
+  
   bool _isDraggingProgress = false;
   double _draggingProgressValue = 0.0;
+
+  int _currentIndex = -1;
+  bool _isBlindBoxRevealed = false;
 
   @override
   void initState() {
@@ -51,6 +58,17 @@ class _PlayerPageState extends ConsumerState<PlayerPage> {
     });
     final songs = await LocalMusicService.scanLocalSongs();
     final musicPath = await LocalMusicService.getMusicDirectoryPath();
+
+    // 创建本地音乐播放列表并加载到 playlistController
+    if (songs.isNotEmpty) {
+      final localPlaylist = Playlist(
+        id: 'local_music',
+        name: '本地音乐',
+        songs: songs,
+      );
+      ref.read(playlistControllerProvider.notifier).loadPlaylist(localPlaylist);
+    }
+
     setState(() {
       _localSongs = songs;
       _isLoading = false;
@@ -66,20 +84,72 @@ class _PlayerPageState extends ConsumerState<PlayerPage> {
     }
   }
 
-  void _loadAndPlaySong(Song song) {
+  void _loadAndPlaySong(Song song) async {
     final audioController = ref.read(audioControllerProvider.notifier);
     final letterController = ref.read(letterControllerProvider.notifier);
+    final playlistController = ref.read(playlistControllerProvider.notifier);
 
-    // 重置状态
     letterController.reset();
+    
+    final index = _localSongs.indexWhere((s) => s.id == song.id);
     setState(() {
       _showLetter = false;
+      _currentCoverPath = null;
+      _isLoadingCover = true;
+      _currentIndex = index;
+      _isBlindBoxRevealed = false;
     });
 
-    // 加载并播放歌曲
+    // 更新 playlistController 的当前歌曲索引
+    playlistController.playSong(song);
+
     audioController.loadSong(song).then((_) {
       audioController.play();
     });
+
+    final coverPath = await LocalMusicService.loadSongCoverArt(song);
+    if (mounted) {
+      setState(() {
+        _currentCoverPath = coverPath;
+        _isLoadingCover = false;
+      });
+    }
+  }
+
+  void _playNext() {
+    if (_localSongs.isEmpty) return;
+    
+    final playMode = ref.read(playlistControllerProvider).playMode;
+    int nextIndex;
+    
+    if (playMode == PlayMode.shuffle || playMode == PlayMode.blindBox) {
+      nextIndex = DateTime.now().millisecondsSinceEpoch % _localSongs.length;
+    } else {
+      nextIndex = (_currentIndex + 1) % _localSongs.length;
+    }
+
+    // 更新 playlistController 的 currentIndex
+    ref.read(playlistControllerProvider.notifier).next();
+
+    _loadAndPlaySong(_localSongs[nextIndex]);
+  }
+
+  void _playPrevious() {
+    if (_localSongs.isEmpty) return;
+    
+    final playMode = ref.read(playlistControllerProvider).playMode;
+    int prevIndex;
+    
+    if (playMode == PlayMode.shuffle || playMode == PlayMode.blindBox) {
+      prevIndex = DateTime.now().millisecondsSinceEpoch % _localSongs.length;
+    } else {
+      prevIndex = _currentIndex <= 0 ? _localSongs.length - 1 : _currentIndex - 1;
+    }
+
+    // 更新 playlistController 的 currentIndex
+    ref.read(playlistControllerProvider.notifier).previous();
+
+    _loadAndPlaySong(_localSongs[prevIndex]);
   }
 
   void _onSongCompleted() async {
@@ -406,37 +476,34 @@ class _PlayerPageState extends ConsumerState<PlayerPage> {
         Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // 专辑封面（盲盒效果）
-            BlurredCover(
-              coverUrl: song.coverUrl,
-              dominantColor: song.dominantColor,
-              year: song.year,
+            Stack(
+              alignment: Alignment.center,
+              children: [
+                BlurredCover(
+                  coverUrl: _currentCoverPath ?? song.coverUrl,
+                  dominantColor: song.dominantColor,
+                  year: song.year,
+                ),
+                if (_isLoadingCover)
+                  Positioned.fill(
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Colors.black.withOpacity(0.5),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Center(
+                        child: ProgressRing(
+                          activeColor: AppTheme.vintageGold,
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
             ),
             const SizedBox(height: 40),
 
             // 歌曲信息
-            Text(
-              song.title,
-              style: FluentTheme.of(context).typography.title?.copyWith(
-                color: AppTheme.warmCream,
-                fontSize: 28,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              song.artist,
-              style: FluentTheme.of(context).typography.subtitle?.copyWith(
-                color: AppTheme.warmBeige.withOpacity(0.8),
-                fontSize: 18,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              '${song.album} · ${song.year}',
-              style: FluentTheme.of(context).typography.caption?.copyWith(
-                color: AppTheme.warmBrown,
-              ),
-            ),
+            _buildSongInfo(song),
             const SizedBox(height: 40),
 
             // 进度条
@@ -580,6 +647,84 @@ class _PlayerPageState extends ConsumerState<PlayerPage> {
     );
   }
 
+  Widget _buildSongInfo(Song song) {
+    final playMode = ref.watch(playlistControllerProvider).playMode;
+    final isBlindBoxMode = playMode == PlayMode.blindBox;
+    
+    if (isBlindBoxMode && !_isBlindBoxRevealed) {
+      return GestureDetector(
+        onTap: () {
+          setState(() {
+            _isBlindBoxRevealed = true;
+          });
+        },
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+          decoration: BoxDecoration(
+            color: AppTheme.warmBrown.withOpacity(0.2),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: AppTheme.vintageGold.withOpacity(0.3),
+            ),
+          ),
+          child: Column(
+            children: [
+              Icon(
+                FluentIcons.giftbox,
+                color: AppTheme.vintageGold,
+                size: 32,
+              ),
+              const SizedBox(height: 12),
+              Text(
+                '点击揭晓歌曲',
+                style: TextStyle(
+                  color: AppTheme.warmBeige,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                '神秘盲盒模式',
+                style: TextStyle(
+                  color: AppTheme.warmBrown.withOpacity(0.7),
+                  fontSize: 12,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+    
+    return Column(
+      children: [
+        Text(
+          song.title,
+          style: FluentTheme.of(context).typography.title?.copyWith(
+            color: AppTheme.warmCream,
+            fontSize: 28,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          song.artist,
+          style: FluentTheme.of(context).typography.subtitle?.copyWith(
+            color: AppTheme.warmBeige.withOpacity(0.8),
+            fontSize: 18,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          '${song.album} · ${song.year}',
+          style: FluentTheme.of(context).typography.caption?.copyWith(
+            color: AppTheme.warmBrown,
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildProgressBar(PlayerState playerState) {
     final position = playerState.position;
     final duration = playerState.duration;
@@ -648,69 +793,118 @@ class _PlayerPageState extends ConsumerState<PlayerPage> {
   }
 
   Widget _buildControls(PlayerState playerState) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
+    final playMode = ref.watch(playlistControllerProvider).playMode;
+    
+    return Column(
       children: [
-        // 上一首
-        IconButton(
-          icon: Icon(
-            FluentIcons.previous,
-            color: AppTheme.warmBeige,
-            size: 28,
-          ),
-          onPressed: () {
-            // 实现上一首逻辑
-          },
-        ),
-        const SizedBox(width: 32),
-
-        // 播放/暂停
-        GestureDetector(
-          onTap: () {
-            ref.read(audioControllerProvider.notifier).togglePlay();
-          },
-          child: Container(
-            width: 72,
-            height: 72,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: const LinearGradient(
-                colors: [
-                  AppTheme.vintageGold,
-                  Color(0xFFB8941F),
-                ],
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            // 播放模式切换
+            _buildPlayModeButton(playMode),
+            const SizedBox(width: 24),
+            
+            // 上一首
+            IconButton(
+              icon: Icon(
+                FluentIcons.previous,
+                color: AppTheme.warmBeige,
+                size: 28,
               ),
-              boxShadow: [
-                BoxShadow(
-                  color: AppTheme.vintageGold.withOpacity(0.4),
-                  blurRadius: 20,
-                  spreadRadius: 2,
-                ),
-              ],
+              onPressed: _playPrevious,
             ),
-            child: Icon(
-              playerState.isPlaying
-                  ? FluentIcons.pause
-                  : FluentIcons.play_solid,
-              color: Colors.white,
-              size: 32,
-            ),
-          ),
-        ),
-        const SizedBox(width: 32),
+            const SizedBox(width: 32),
 
-        // 下一首
-        IconButton(
-          icon: Icon(
-            FluentIcons.next,
-            color: AppTheme.warmBeige,
-            size: 28,
-          ),
-          onPressed: () {
-            // 实现下一首逻辑
-          },
+            // 播放/暂停
+            GestureDetector(
+              onTap: () {
+                ref.read(audioControllerProvider.notifier).togglePlay();
+              },
+              child: Container(
+                width: 72,
+                height: 72,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: const LinearGradient(
+                    colors: [
+                      AppTheme.vintageGold,
+                      Color(0xFFB8941F),
+                    ],
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppTheme.vintageGold.withOpacity(0.4),
+                      blurRadius: 20,
+                      spreadRadius: 2,
+                    ),
+                  ],
+                ),
+                child: Icon(
+                  playerState.isPlaying
+                      ? FluentIcons.pause
+                      : FluentIcons.play_solid,
+                  color: Colors.white,
+                  size: 32,
+                ),
+              ),
+            ),
+            const SizedBox(width: 32),
+
+            // 下一首
+            IconButton(
+              icon: Icon(
+                FluentIcons.next,
+                color: AppTheme.warmBeige,
+                size: 28,
+              ),
+              onPressed: _playNext,
+            ),
+          ],
         ),
       ],
+    );
+  }
+
+  Widget _buildPlayModeButton(PlayMode playMode) {
+    IconData iconData;
+    String tooltip;
+    Color iconColor;
+    
+    switch (playMode) {
+      case PlayMode.sequential:
+        iconData = FluentIcons.play;
+        tooltip = '顺序播放';
+        iconColor = AppTheme.warmBeige;
+        break;
+      case PlayMode.shuffle:
+        iconData = FluentIcons.sync;
+        tooltip = '随机播放';
+        iconColor = AppTheme.vintageGold;
+        break;
+      case PlayMode.blindBox:
+        iconData = FluentIcons.giftbox;
+        tooltip = '盲盒模式';
+        iconColor = AppTheme.vintageGold;
+        break;
+    }
+    
+    return Tooltip(
+      message: tooltip,
+      child: IconButton(
+        icon: Icon(
+          iconData,
+          color: iconColor,
+          size: 22,
+        ),
+        onPressed: () {
+          ref.read(playlistControllerProvider.notifier).togglePlayMode();
+          if (playMode == PlayMode.blindBox) {
+            setState(() {
+              _isBlindBoxRevealed = false;
+            });
+          }
+        },
+      ),
     );
   }
 

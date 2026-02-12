@@ -28,6 +28,7 @@ class PlaylistState {
   final int currentIndex;
   final bool isShuffled;
   final RepeatMode repeatMode;
+  final PlayMode playMode;
 
   const PlaylistState({
     this.playlists = const [],
@@ -35,6 +36,7 @@ class PlaylistState {
     this.currentIndex = 0,
     this.isShuffled = false,
     this.repeatMode = RepeatMode.none,
+    this.playMode = PlayMode.sequential,
   });
 
   PlaylistState copyWith({
@@ -43,6 +45,7 @@ class PlaylistState {
     int? currentIndex,
     bool? isShuffled,
     RepeatMode? repeatMode,
+    PlayMode? playMode,
   }) {
     return PlaylistState(
       playlists: playlists ?? this.playlists,
@@ -50,6 +53,7 @@ class PlaylistState {
       currentIndex: currentIndex ?? this.currentIndex,
       isShuffled: isShuffled ?? this.isShuffled,
       repeatMode: repeatMode ?? this.repeatMode,
+      playMode: playMode ?? this.playMode,
     );
   }
 
@@ -73,6 +77,12 @@ enum RepeatMode {
   none,
   all,
   one,
+}
+
+enum PlayMode {
+  sequential,
+  shuffle,
+  blindBox,
 }
 
 // 示例播放列表

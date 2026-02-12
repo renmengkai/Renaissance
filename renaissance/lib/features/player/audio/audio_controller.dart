@@ -138,12 +138,17 @@ class AudioController extends StateNotifier<AudioPlaybackStatus> {
         errorMessage: null,
       );
     } catch (e, stackTrace) {
-      final errorMsg = '加载音频失败: $e';
       debugPrint('[AudioController] Error loading audio: $e');
       debugPrint('[AudioController] Stack trace: $stackTrace');
+      // 错误信息只在控制台打印，不显示在 UI 上
+      // 即使加载失败，也保持 currentSong 以便 UI 显示正确的歌曲信息
       state = state.copyWith(
         isLoading: false,
-        errorMessage: errorMsg,
+        errorMessage: null,
+        // 重置播放状态，但保留 currentSong
+        isPlaying: false,
+        position: Duration.zero,
+        progress: 0.0,
       );
     }
   }

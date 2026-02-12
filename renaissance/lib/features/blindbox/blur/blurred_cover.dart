@@ -1,4 +1,5 @@
 import 'dart:math';
+import 'dart:io';
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:flutter/material.dart' show BackdropFilter, Image;
 import 'dart:ui';
@@ -85,19 +86,8 @@ class _BlurredCoverState extends ConsumerState<BlurredCover>
             child: Stack(
               fit: StackFit.expand,
               children: [
-                // 专辑封面
-                Image.asset(
-                  widget.coverUrl,
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) {
-                    return Container(
-                      color: _parseColor(widget.dominantColor) ??
-                          AppTheme.warmBrown,
-                    );
-                  },
-                ),
+                _buildCoverImage(),
 
-                // 模糊层
                 if (blurSigma > 0)
                   BackdropFilter(
                     filter: ImageFilter.blur(
@@ -269,6 +259,53 @@ class _BlurredCoverState extends ConsumerState<BlurredCover>
       );
     } catch (e) {
       return null;
+    }
+  }
+
+  Widget _buildCoverImage() {
+    final coverUrl = widget.coverUrl;
+    final fallbackColor = _parseColor(widget.dominantColor) ?? AppTheme.warmBrown;
+
+    Widget errorWidget = Container(
+      color: fallbackColor,
+      child: Center(
+        child: Icon(
+          FluentIcons.music_note,
+          size: 80,
+          color: AppTheme.warmBeige.withOpacity(0.3),
+        ),
+      ),
+    );
+
+    if (coverUrl.startsWith('http://') || coverUrl.startsWith('https://')) {
+      return Image.network(
+        coverUrl,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) => errorWidget,
+        loadingBuilder: (context, child, loadingProgress) {
+          if (loadingProgress == null) return child;
+          return Container(
+            color: fallbackColor,
+            child: Center(
+              child: ProgressRing(
+                activeColor: AppTheme.vintageGold,
+              ),
+            ),
+          );
+        },
+      );
+    } else if (coverUrl.startsWith('assets/')) {
+      return Image.asset(
+        coverUrl,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) => errorWidget,
+      );
+    } else {
+      return Image.file(
+        File(coverUrl),
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) => errorWidget,
+      );
     }
   }
 }
