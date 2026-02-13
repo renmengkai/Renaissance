@@ -150,6 +150,8 @@ class _PlayerPageState extends ConsumerState<PlayerPage> {
     final playerState = ref.read(audioControllerProvider);
     final song = playerState.currentSong;
 
+    bool hasLetter = false;
+
     if (song != null && song.hasGoldenLetter) {
       final letterController = ref.read(letterControllerProvider.notifier);
       await letterController.checkForLetter(song.id);
@@ -159,7 +161,12 @@ class _PlayerPageState extends ConsumerState<PlayerPage> {
         setState(() {
           _showLetter = true;
         });
+        hasLetter = true;
       }
+    }
+
+    if (!hasLetter) {
+      _playNext();
     }
   }
 

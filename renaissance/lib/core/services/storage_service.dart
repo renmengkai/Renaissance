@@ -147,4 +147,9 @@ class StorageKeys {
   // 主题
   static const String themeMode = 'theme_mode';
   static const String accentColor = 'accent_color';
+
+  // 音乐源
+  static const String musicSources = 'music_sources';
+  static const String activeMusicSource = 'active_music_source';
+  static const String cloudMusicConfig = 'cloud_music_config';
 }

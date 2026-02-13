@@ -1,4 +1,5 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'music_source.dart';
 
 part 'song.freezed.dart';
 part 'song.g.dart';
@@ -16,6 +17,9 @@ class Song with _$Song {
     required Duration duration,
     String? dominantColor,
     @Default(false) bool hasGoldenLetter,
+    @Default(MusicSourceType.local) MusicSourceType sourceType,
+    String? sourceId,
+    String? cloudKey,
   }) = _Song;
 
   factory Song.fromJson(Map<String, dynamic> json) => _$SongFromJson(json);

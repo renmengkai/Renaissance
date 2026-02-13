@@ -17,6 +17,11 @@ _$SongImpl _$$SongImplFromJson(Map<String, dynamic> json) => _$SongImpl(
       duration: Duration(microseconds: (json['duration'] as num).toInt()),
       dominantColor: json['dominantColor'] as String?,
       hasGoldenLetter: json['hasGoldenLetter'] as bool? ?? false,
+      sourceType:
+          $enumDecodeNullable(_$MusicSourceTypeEnumMap, json['sourceType']) ??
+              MusicSourceType.local,
+      sourceId: json['sourceId'] as String?,
+      cloudKey: json['cloudKey'] as String?,
     );
 
 Map<String, dynamic> _$$SongImplToJson(_$SongImpl instance) =>
@@ -31,4 +36,12 @@ Map<String, dynamic> _$$SongImplToJson(_$SongImpl instance) =>
       'duration': instance.duration.inMicroseconds,
       'dominantColor': instance.dominantColor,
       'hasGoldenLetter': instance.hasGoldenLetter,
+      'sourceType': _$MusicSourceTypeEnumMap[instance.sourceType]!,
+      'sourceId': instance.sourceId,
+      'cloudKey': instance.cloudKey,
     };
+
+const _$MusicSourceTypeEnumMap = {
+  MusicSourceType.local: 'local',
+  MusicSourceType.cloud: 'cloud',
+};

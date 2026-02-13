@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../shared/widgets/vintage_settings.dart';
+import '../../player/ui/music_source_settings.dart';
 
 class SettingsState {
   final double masterVolume;
@@ -271,6 +272,8 @@ class SettingsPage extends ConsumerWidget {
                   ),
                 ],
               ),
+              const SizedBox(height: 24),
+              const MusicSourceSettings(),
               const SizedBox(height: 24),
               _buildSection(
                 context,

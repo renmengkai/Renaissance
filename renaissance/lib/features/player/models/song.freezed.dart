@@ -30,6 +30,9 @@ mixin _$Song {
   Duration get duration => throw _privateConstructorUsedError;
   String? get dominantColor => throw _privateConstructorUsedError;
   bool get hasGoldenLetter => throw _privateConstructorUsedError;
+  MusicSourceType get sourceType => throw _privateConstructorUsedError;
+  String? get sourceId => throw _privateConstructorUsedError;
+  String? get cloudKey => throw _privateConstructorUsedError;
 
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
   @JsonKey(ignore: true)
@@ -51,7 +54,10 @@ abstract class $SongCopyWith<$Res> {
       String audioUrl,
       Duration duration,
       String? dominantColor,
-      bool hasGoldenLetter});
+      bool hasGoldenLetter,
+      MusicSourceType sourceType,
+      String? sourceId,
+      String? cloudKey});
 }
 
 /// @nodoc
@@ -77,6 +83,9 @@ class _$SongCopyWithImpl<$Res, $Val extends Song>
     Object? duration = null,
     Object? dominantColor = freezed,
     Object? hasGoldenLetter = null,
+    Object? sourceType = null,
+    Object? sourceId = freezed,
+    Object? cloudKey = freezed,
   }) {
     return _then(_value.copyWith(
       id: null == id
@@ -119,6 +128,18 @@ class _$SongCopyWithImpl<$Res, $Val extends Song>
           ? _value.hasGoldenLetter
           : hasGoldenLetter // ignore: cast_nullable_to_non_nullable
               as bool,
+      sourceType: null == sourceType
+          ? _value.sourceType
+          : sourceType // ignore: cast_nullable_to_non_nullable
+              as MusicSourceType,
+      sourceId: freezed == sourceId
+          ? _value.sourceId
+          : sourceId // ignore: cast_nullable_to_non_nullable
+              as String?,
+      cloudKey: freezed == cloudKey
+          ? _value.cloudKey
+          : cloudKey // ignore: cast_nullable_to_non_nullable
+              as String?,
     ) as $Val);
   }
 }
@@ -140,7 +161,10 @@ abstract class _$$SongImplCopyWith<$Res> implements $SongCopyWith<$Res> {
       String audioUrl,
       Duration duration,
       String? dominantColor,
-      bool hasGoldenLetter});
+      bool hasGoldenLetter,
+      MusicSourceType sourceType,
+      String? sourceId,
+      String? cloudKey});
 }
 
 /// @nodoc
@@ -163,6 +187,9 @@ class __$$SongImplCopyWithImpl<$Res>
     Object? duration = null,
     Object? dominantColor = freezed,
     Object? hasGoldenLetter = null,
+    Object? sourceType = null,
+    Object? sourceId = freezed,
+    Object? cloudKey = freezed,
   }) {
     return _then(_$SongImpl(
       id: null == id
@@ -205,6 +232,18 @@ class __$$SongImplCopyWithImpl<$Res>
           ? _value.hasGoldenLetter
           : hasGoldenLetter // ignore: cast_nullable_to_non_nullable
               as bool,
+      sourceType: null == sourceType
+          ? _value.sourceType
+          : sourceType // ignore: cast_nullable_to_non_nullable
+              as MusicSourceType,
+      sourceId: freezed == sourceId
+          ? _value.sourceId
+          : sourceId // ignore: cast_nullable_to_non_nullable
+              as String?,
+      cloudKey: freezed == cloudKey
+          ? _value.cloudKey
+          : cloudKey // ignore: cast_nullable_to_non_nullable
+              as String?,
     ));
   }
 }
@@ -222,7 +261,10 @@ class _$SongImpl implements _Song {
       required this.audioUrl,
       required this.duration,
       this.dominantColor,
-      this.hasGoldenLetter = false});
+      this.hasGoldenLetter = false,
+      this.sourceType = MusicSourceType.local,
+      this.sourceId,
+      this.cloudKey});
 
   factory _$SongImpl.fromJson(Map<String, dynamic> json) =>
       _$$SongImplFromJson(json);
@@ -248,10 +290,17 @@ class _$SongImpl implements _Song {
   @override
   @JsonKey()
   final bool hasGoldenLetter;
+  @override
+  @JsonKey()
+  final MusicSourceType sourceType;
+  @override
+  final String? sourceId;
+  @override
+  final String? cloudKey;
 
   @override
   String toString() {
-    return 'Song(id: $id, title: $title, artist: $artist, album: $album, year: $year, coverUrl: $coverUrl, audioUrl: $audioUrl, duration: $duration, dominantColor: $dominantColor, hasGoldenLetter: $hasGoldenLetter)';
+    return 'Song(id: $id, title: $title, artist: $artist, album: $album, year: $year, coverUrl: $coverUrl, audioUrl: $audioUrl, duration: $duration, dominantColor: $dominantColor, hasGoldenLetter: $hasGoldenLetter, sourceType: $sourceType, sourceId: $sourceId, cloudKey: $cloudKey)';
   }
 
   @override
@@ -273,13 +322,32 @@ class _$SongImpl implements _Song {
             (identical(other.dominantColor, dominantColor) ||
                 other.dominantColor == dominantColor) &&
             (identical(other.hasGoldenLetter, hasGoldenLetter) ||
-                other.hasGoldenLetter == hasGoldenLetter));
+                other.hasGoldenLetter == hasGoldenLetter) &&
+            (identical(other.sourceType, sourceType) ||
+                other.sourceType == sourceType) &&
+            (identical(other.sourceId, sourceId) ||
+                other.sourceId == sourceId) &&
+            (identical(other.cloudKey, cloudKey) ||
+                other.cloudKey == cloudKey));
   }
 
   @JsonKey(ignore: true)
   @override
-  int get hashCode => Object.hash(runtimeType, id, title, artist, album, year,
-      coverUrl, audioUrl, duration, dominantColor, hasGoldenLetter);
+  int get hashCode => Object.hash(
+      runtimeType,
+      id,
+      title,
+      artist,
+      album,
+      year,
+      coverUrl,
+      audioUrl,
+      duration,
+      dominantColor,
+      hasGoldenLetter,
+      sourceType,
+      sourceId,
+      cloudKey);
 
   @JsonKey(ignore: true)
   @override
@@ -306,7 +374,10 @@ abstract class _Song implements Song {
       required final String audioUrl,
       required final Duration duration,
       final String? dominantColor,
-      final bool hasGoldenLetter}) = _$SongImpl;
+      final bool hasGoldenLetter,
+      final MusicSourceType sourceType,
+      final String? sourceId,
+      final String? cloudKey}) = _$SongImpl;
 
   factory _Song.fromJson(Map<String, dynamic> json) = _$SongImpl.fromJson;
 
@@ -330,6 +401,12 @@ abstract class _Song implements Song {
   String? get dominantColor;
   @override
   bool get hasGoldenLetter;
+  @override
+  MusicSourceType get sourceType;
+  @override
+  String? get sourceId;
+  @override
+  String? get cloudKey;
   @override
   @JsonKey(ignore: true)
   _$$SongImplCopyWith<_$SongImpl> get copyWith =>
