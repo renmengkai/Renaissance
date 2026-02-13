@@ -98,10 +98,11 @@ class MixerPanel extends ConsumerWidget {
               ],
             ),
 
-          // 活跃的白噪音轨道
+          // 活跃的白噪音轨道 - 使用 ConstrainedBox + SingleChildScrollView 防止溢出
           if (mixerState.activeTrackCount > 0)
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
                   '活跃音效',
@@ -112,14 +113,25 @@ class MixerPanel extends ConsumerWidget {
                   ),
                 ),
                 const SizedBox(height: 12),
-                ...mixerState.activeTracks.entries.map((entry) {
-                  return _buildActiveTrackControl(
-                    context,
-                    category: entry.key,
-                    track: entry.value,
-                    mixer: mixer,
-                  );
-                }),
+                ConstrainedBox(
+                  constraints: const BoxConstraints(
+                    maxHeight: 280,
+                  ),
+                  child: SingleChildScrollView(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: mixerState.activeTracks.entries.map((entry) {
+                        return _buildActiveTrackControl(
+                          context,
+                          category: entry.key,
+                          track: entry.value,
+                          mixer: mixer,
+                        );
+                      }).toList(),
+                    ),
+                  ),
+                ),
                 const SizedBox(height: 16),
                 Container(
                   height: 1,

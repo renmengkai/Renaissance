@@ -230,13 +230,6 @@ class _VintageSliderPainter extends CustomPainter {
       );
     }
 
-    // 绘制滑块
-    final thumbPaint = Paint()
-      ..color = thumbColor
-      ..style = PaintingStyle.fill
-      ..shadowColor = thumbColor.withOpacity(0.5)
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4);
-
     // 滑块阴影
     canvas.drawCircle(
       Offset(thumbX, centerY),
@@ -245,6 +238,12 @@ class _VintageSliderPainter extends CustomPainter {
         ..color = Colors.black.withOpacity(0.3)
         ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8),
     );
+
+    // 绘制滑块
+    final thumbPaint = Paint()
+      ..color = thumbColor
+      ..style = PaintingStyle.fill
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4);
 
     // 滑块主体
     canvas.drawCircle(

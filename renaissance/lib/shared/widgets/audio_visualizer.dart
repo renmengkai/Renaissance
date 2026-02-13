@@ -97,34 +97,38 @@ class _AudioVisualizerState extends State<AudioVisualizer>
   Widget build(BuildContext context) {
     final color = widget.color ?? AppTheme.vintageGold;
 
-    return Container(
-      height: widget.height,
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: List.generate(widget.barCount, (index) {
-          return AnimatedBuilder(
-            animation: _animations[index],
-            builder: (context, child) {
-              return Container(
-                width: 4,
-                height: widget.height * _animations[index].value,
-                margin: const EdgeInsets.symmetric(horizontal: 2),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.bottomCenter,
-                    end: Alignment.topCenter,
-                    colors: [
-                      color.withOpacity(0.8),
-                      color.withOpacity(0.4),
-                    ],
+    return Semantics(
+      container: false,
+      excludeSemantics: true,
+      child: Container(
+        height: widget.height,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: List.generate(widget.barCount, (index) {
+            return AnimatedBuilder(
+              animation: _animations[index],
+              builder: (context, child) {
+                return Container(
+                  width: 4,
+                  height: widget.height * _animations[index].value,
+                  margin: const EdgeInsets.symmetric(horizontal: 2),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.bottomCenter,
+                      end: Alignment.topCenter,
+                      colors: [
+                        color.withOpacity(0.8),
+                        color.withOpacity(0.4),
+                      ],
+                    ),
+                    borderRadius: BorderRadius.circular(2),
                   ),
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              );
-            },
-          );
-        }),
+                );
+              },
+            );
+          }),
+        ),
       ),
     );
   }
@@ -168,14 +172,10 @@ class _CircularVisualizerState extends State<CircularVisualizer>
 
   void _startAnimation() {
     _controller.addListener(() {
-      if (mounted) {
+      if (mounted && widget.isPlaying) {
         setState(() {
           for (int i = 0; i < _amplitudes.length; i++) {
-            if (widget.isPlaying) {
-              _amplitudes[i] = 0.3 + _random.nextDouble() * 0.7;
-            } else {
-              _amplitudes[i] = 0.3;
-            }
+            _amplitudes[i] = 0.3 + _random.nextDouble() * 0.7;
           }
         });
       }
@@ -203,11 +203,15 @@ class _CircularVisualizerState extends State<CircularVisualizer>
   Widget build(BuildContext context) {
     final color = widget.color ?? AppTheme.vintageGold;
 
-    return CustomPaint(
-      size: Size(widget.size, widget.size),
-      painter: _CircularVisualizerPainter(
-        amplitudes: _amplitudes,
-        color: color,
+    return Semantics(
+      container: false,
+      excludeSemantics: true,
+      child: CustomPaint(
+        size: Size(widget.size, widget.size),
+        painter: _CircularVisualizerPainter(
+          amplitudes: _amplitudes,
+          color: color,
+        ),
       ),
     );
   }
@@ -306,7 +310,6 @@ class _WaveformVisualizerState extends State<WaveformVisualizer>
     _controller.addListener(() {
       if (mounted && widget.isPlaying) {
         setState(() {
-          // 移位并添加新点
           for (int i = 0; i < _points.length - 1; i++) {
             _points[i] = _points[i + 1];
           }
@@ -337,11 +340,15 @@ class _WaveformVisualizerState extends State<WaveformVisualizer>
   Widget build(BuildContext context) {
     final color = widget.color ?? AppTheme.vintageGold;
 
-    return CustomPaint(
-      size: Size(widget.width, widget.height),
-      painter: _WaveformPainter(
-        points: _points,
-        color: color,
+    return Semantics(
+      container: false,
+      excludeSemantics: true,
+      child: CustomPaint(
+        size: Size(widget.width, widget.height),
+        painter: _WaveformPainter(
+          points: _points,
+          color: color,
+        ),
       ),
     );
   }

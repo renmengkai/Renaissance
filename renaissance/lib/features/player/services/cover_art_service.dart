@@ -1,10 +1,13 @@
 import 'dart:io';
 import 'dart:typed_data';
+import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as path;
 import 'package:image/image.dart' as img;
+import 'package:audiotagger/audiotagger.dart';
+import 'package:audiotagger/models/tag.dart';
 import '../models/song.dart';
 
 /// 封面获取服务
@@ -14,10 +17,10 @@ class CoverArtService {
   factory CoverArtService() => _instance;
   CoverArtService._internal();
 
-  // 缓存目录
+  final _tagger = Audiotagger();
+
   Directory? _cacheDir;
 
-  // 初始化缓存目录
   Future<void> _initCacheDir() async {
     if (_cacheDir != null) return;
 
@@ -34,13 +37,11 @@ class CoverArtService {
   Future<String> getCoverArt(Song song) async {
     await _initCacheDir();
 
-    // 生成缓存文件名
     final cacheFileName = _generateCacheFileName(song);
     final cachePath = path.join(_cacheDir!.path, cacheFileName);
 
-    // 检查缓存
     if (await File(cachePath).exists()) {
-      debugPrint('Using cached cover for: ${song.title}');
+      debugPrint('[CoverArt] Using cached cover for: ${song.title}');
       return cachePath;
     }
 
@@ -48,7 +49,7 @@ class CoverArtService {
     final embeddedCover = await _extractEmbeddedCover(song.audioUrl);
     if (embeddedCover != null) {
       await _saveCoverToCache(embeddedCover, cachePath);
-      debugPrint('Extracted embedded cover for: ${song.title}');
+      debugPrint('[CoverArt] Extracted embedded cover for: ${song.title}');
       return cachePath;
     }
 
@@ -56,25 +57,15 @@ class CoverArtService {
     final onlineCover = await _searchOnlineCover(song);
     if (onlineCover != null) {
       await _saveCoverToCache(onlineCover, cachePath);
-      debugPrint('Found online cover for: ${song.title}');
+      debugPrint('[CoverArt] Found online cover for: ${song.title}');
       return cachePath;
     }
 
-    // 3. 返回默认封面
-    debugPrint('Using default cover for: ${song.title}');
+    debugPrint('[CoverArt] Using default cover for: ${song.title}');
     return _getDefaultCoverPath(song);
   }
 
-  /// 生成缓存文件名
-  String _generateCacheFileName(Song song) {
-    // 使用歌曲信息生成唯一标识
-    final identifier = '${song.artist}_${song.title}_${song.album}'
-        .replaceAll(RegExp(r'[^a-zA-Z0-9\u4e00-\u9fa5]'), '_')
-        .toLowerCase();
-    return '${identifier}_cover.jpg';
-  }
-
-  /// 从音频文件提取内嵌封面（带超时控制）
+  /// 从音频文件提取元数据和封面
   Future<Uint8List?> _extractEmbeddedCover(String audioPath) async {
     try {
       if (audioPath.startsWith('assets/')) {
@@ -83,50 +74,60 @@ class CoverArtService {
 
       final file = File(audioPath);
       if (!await file.exists()) {
+        debugPrint('[CoverArt] File not found: $audioPath');
         return null;
       }
 
-      final fileSize = await file.length();
-      if (fileSize > 50 * 1024 * 1024) {
-        debugPrint('File too large for cover extraction: $audioPath');
-        return null;
+      // 使用 audiotagger 提取封面 (仅支持 Android)
+      if (Platform.isAndroid) {
+        try {
+          final artwork = await _tagger.readArtwork(
+            path: audioPath,
+          );
+          if (artwork != null && artwork.isNotEmpty) {
+            debugPrint('[CoverArt] Successfully extracted artwork via audiotagger');
+            return artwork;
+          }
+        } catch (e) {
+          debugPrint('[CoverArt] Audiotagger error: $e');
+        }
       }
 
-      final result = await _extractEmbeddedCoverAsync(file).timeout(
-        const Duration(seconds: 2),
-        onTimeout: () => null,
-      );
-      return result;
+      // 备用：手动解析
+      return await _manualExtractCover(file);
     } catch (e) {
-      debugPrint('Error extracting embedded cover: $e');
+      debugPrint('[CoverArt] Error extracting embedded cover: $e');
       return null;
     }
   }
 
-  /// 异步提取内嵌封面
-  Future<Uint8List?> _extractEmbeddedCoverAsync(File file) async {
-    final bytes = await file.readAsBytes();
-    final ext = path.extension(file.path).toLowerCase();
+  /// 手动提取封面（备用方案）
+  Future<Uint8List?> _manualExtractCover(File file) async {
+    try {
+      final bytes = await file.readAsBytes();
+      final ext = path.extension(file.path).toLowerCase();
 
-    switch (ext) {
-      case '.mp3':
-        return _extractMp3Cover(bytes);
-      case '.flac':
-        return _extractFlacCover(bytes);
-      case '.m4a':
-      case '.mp4':
-        return _extractMp4Cover(bytes);
-      default:
-        return null;
+      switch (ext) {
+        case '.mp3':
+          return _extractMp3Cover(bytes);
+        case '.flac':
+          return _extractFlacCover(bytes);
+        case '.m4a':
+        case '.mp4':
+          return _extractMp4Cover(bytes);
+        default:
+          return null;
+      }
+    } catch (e) {
+      debugPrint('[CoverArt] Manual extraction error: $e');
+      return null;
     }
   }
 
   /// 从MP3文件提取ID3标签中的封面
   Uint8List? _extractMp3Cover(Uint8List bytes) {
     try {
-      // 查找ID3标签
-      // ID3v2.3 和 ID3v2.4 中封面的帧标识是 APIC
-      final apicPattern = [0x41, 0x50, 0x49, 0x43]; // "APIC"
+      final apicPattern = [0x41, 0x50, 0x49, 0x43];
 
       for (int i = 0; i < bytes.length - 4; i++) {
         if (bytes[i] == apicPattern[0] &&
@@ -134,34 +135,24 @@ class CoverArtService {
             bytes[i + 2] == apicPattern[2] &&
             bytes[i + 3] == apicPattern[3]) {
 
-          // 找到APIC帧，跳过帧头和文本编码字节
-          int offset = i + 10; // 帧头(4) + 大小(4) + 标志(2)
-
-          // 跳过文本编码字节
+          int offset = i + 10;
           offset++;
 
-          // 跳过MIME类型（以null结尾）
           while (offset < bytes.length && bytes[offset] != 0) {
             offset++;
           }
-          offset++; // 跳过null
-
-          // 跳过图片类型字节
+          offset++;
           offset++;
 
-          // 跳过描述（以null结尾）
           while (offset < bytes.length && bytes[offset] != 0) {
             offset++;
           }
-          offset++; // 跳过null
+          offset++;
 
-          // 查找图片数据的结束位置（下一个帧或标签结束）
           int endOffset = offset;
           while (endOffset < bytes.length - 4) {
-            // 检查是否是下一个帧的开始
             if ((bytes[endOffset] >= 0x41 && bytes[endOffset] <= 0x5A) ||
                 (bytes[endOffset] >= 0x30 && bytes[endOffset] <= 0x39)) {
-              // 检查接下来的3个字节是否也是大写字母或数字
               bool isFrameHeader = true;
               for (int j = 1; j < 4; j++) {
                 final byte = bytes[endOffset + j];
@@ -182,7 +173,7 @@ class CoverArtService {
         }
       }
     } catch (e) {
-      debugPrint('Error extracting MP3 cover: $e');
+      debugPrint('[CoverArt] Error extracting MP3 cover: $e');
     }
     return null;
   }
@@ -190,9 +181,7 @@ class CoverArtService {
   /// 从FLAC文件提取封面
   Uint8List? _extractFlacCover(Uint8List bytes) {
     try {
-      // FLAC使用Vorbis Comment和PICTURE块
-      // 查找PICTURE块（块类型6）
-      int offset = 4; // 跳过"fLaC"标记
+      int offset = 4;
 
       while (offset < bytes.length - 4) {
         final blockType = bytes[offset] & 0x7F;
@@ -203,31 +192,23 @@ class CoverArtService {
                          bytes[offset + 3];
 
         if (blockType == 6) {
-          // PICTURE块
-          // 跳过PICTURE类型(4) + MIME长度(4) + MIME + 描述长度(4) + 描述
           int pictureOffset = offset + 4;
-
-          // 跳过PICTURE类型
           pictureOffset += 4;
 
-          // 读取MIME类型长度
           final mimeLength = (bytes[pictureOffset] << 24) |
                             (bytes[pictureOffset + 1] << 16) |
                             (bytes[pictureOffset + 2] << 8) |
                             bytes[pictureOffset + 3];
           pictureOffset += 4 + mimeLength;
 
-          // 读取描述长度
           final descLength = (bytes[pictureOffset] << 24) |
                             (bytes[pictureOffset + 1] << 16) |
                             (bytes[pictureOffset + 2] << 8) |
                             bytes[pictureOffset + 3];
           pictureOffset += 4 + descLength;
 
-          // 跳过宽度(4) + 高度(4) + 颜色深度(4) + 颜色数(4)
           pictureOffset += 16;
 
-          // 读取图片数据长度
           final dataLength = (bytes[pictureOffset] << 24) |
                             (bytes[pictureOffset + 1] << 16) |
                             (bytes[pictureOffset + 2] << 8) |
@@ -244,7 +225,7 @@ class CoverArtService {
         if (isLastBlock) break;
       }
     } catch (e) {
-      debugPrint('Error extracting FLAC cover: $e');
+      debugPrint('[CoverArt] Error extracting FLAC cover: $e');
     }
     return null;
   }
@@ -252,19 +233,16 @@ class CoverArtService {
   /// 从MP4/M4A文件提取封面
   Uint8List? _extractMp4Cover(Uint8List bytes) {
     try {
-      // MP4/M4A使用atom/box结构，封面通常在covr atom中
       return _findMp4Atom(bytes, 'covr');
     } catch (e) {
-      debugPrint('Error extracting MP4 cover: $e');
+      debugPrint('[CoverArt] Error extracting MP4 cover: $e');
     }
     return null;
   }
 
-  /// 递归查找MP4 atom
   Uint8List? _findMp4Atom(Uint8List bytes, String atomName) {
     int offset = 0;
 
-    // 跳过ftyp box
     if (bytes.length > 8) {
       final ftypSize = (bytes[0] << 24) | (bytes[1] << 16) | (bytes[2] << 8) | bytes[3];
       final ftypName = String.fromCharCodes(bytes.sublist(4, 8));
@@ -281,14 +259,12 @@ class CoverArtService {
       if (size == 0 || size > bytes.length - offset) break;
 
       if (name == atomName) {
-        // 找到目标atom，跳过atom头和版本/标志字节
-        final dataOffset = offset + 8 + 8; // atom头(8) + 版本/标志(8)
+        final dataOffset = offset + 8 + 8;
         if (dataOffset < offset + size) {
           return Uint8List.sublistView(bytes, dataOffset, offset + size);
         }
       }
 
-      // 递归搜索moov和udta容器
       if (name == 'moov' || name == 'udta' || name == 'meta') {
         final result = _findMp4Atom(
           Uint8List.sublistView(bytes, offset + 8, offset + size),
@@ -305,33 +281,102 @@ class CoverArtService {
 
   /// 在线搜索封面（带超时控制）
   Future<Uint8List?> _searchOnlineCover(Song song) async {
+    // 按优先级排列的搜索源
     final sources = [
-      _searchFromMusicBrainz,
-      _searchFromLastFm,
-      _searchFromDeezer,
+      ('iTunes', _searchFromITunes),
+      ('Deezer', _searchFromDeezer),
+      ('Spotify', _searchFromSpotify),
+      ('MusicBrainz', _searchFromMusicBrainz),
+      ('LastFm', _searchFromLastFm),
     ];
 
-    for (final source in sources) {
+    for (final (name, source) in sources) {
       try {
         final cover = await source(song).timeout(
-          const Duration(seconds: 3),
+          const Duration(seconds: 5),
           onTimeout: () => null,
         );
-        if (cover != null) return cover;
+        if (cover != null) {
+          debugPrint('[CoverArt] Found cover from $name');
+          return cover;
+        }
       } catch (e) {
-        debugPrint('Error searching cover from ${source.toString()}: $e');
+        debugPrint('[CoverArt] Error from $name: $e');
       }
     }
 
     return null;
   }
 
-  /// 从MusicBrainz搜索封面
-  Future<Uint8List?> _searchFromMusicBrainz(Song song) async {
+  /// 从 iTunes API 搜索封面（最可靠）
+  Future<Uint8List?> _searchFromITunes(Song song) async {
     try {
       // 构建搜索查询
-      final query = Uri.encodeComponent('${song.title} ${song.artist}');
-      final searchUrl = 'https://musicbrainz.org/ws/2/release/?query=$query&fmt=json&limit=1';
+      String query;
+      if (song.artist != '未知艺术家' && song.artist.isNotEmpty) {
+        query = '${song.artist} ${song.title}';
+      } else {
+        query = song.title;
+      }
+
+      final encodedQuery = Uri.encodeQueryComponent(query);
+      final searchUrl = 'https://itunes.apple.com/search?term=$encodedQuery&media=music&limit=5';
+
+      debugPrint('[CoverArt] iTunes search: $searchUrl');
+
+      final response = await http.get(
+        Uri.parse(searchUrl),
+        headers: {
+          'User-Agent': 'RenaissanceMusicApp/1.0',
+          'Accept': 'application/json',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        final results = data['results'] as List?;
+
+        if (results != null && results.isNotEmpty) {
+          // 尝试找到最佳匹配
+          for (final result in results) {
+            final artistName = result['artistName'] as String?;
+            final trackName = result['trackName'] as String?;
+            var artworkUrl = result['artworkUrl100'] as String?;
+
+            if (artworkUrl != null) {
+              // 获取高清封面 (600x600)
+              artworkUrl = artworkUrl.replaceAll('100x100', '600x600');
+
+              debugPrint('[CoverArt] iTunes found: $trackName by $artistName');
+
+              final imageResponse = await http.get(Uri.parse(artworkUrl));
+              if (imageResponse.statusCode == 200 && imageResponse.bodyBytes.isNotEmpty) {
+                return imageResponse.bodyBytes;
+              }
+            }
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint('[CoverArt] iTunes search error: $e');
+    }
+    return null;
+  }
+
+  /// 从 Deezer API 搜索封面
+  Future<Uint8List?> _searchFromDeezer(Song song) async {
+    try {
+      String query;
+      if (song.artist != '未知艺术家' && song.artist.isNotEmpty) {
+        query = '${song.artist} ${song.title}';
+      } else {
+        query = song.title;
+      }
+
+      final encodedQuery = Uri.encodeQueryComponent(query);
+      final searchUrl = 'https://api.deezer.com/search?q=$encodedQuery&limit=5';
+
+      debugPrint('[CoverArt] Deezer search: $searchUrl');
 
       final response = await http.get(
         Uri.parse(searchUrl),
@@ -339,111 +384,228 @@ class CoverArtService {
       );
 
       if (response.statusCode == 200) {
-        // 解析响应获取release ID
-        final releaseMatch = RegExp(r'"id":"([^"]+)"').firstMatch(response.body);
-        if (releaseMatch != null) {
-          final releaseId = releaseMatch.group(1);
+        final data = json.decode(response.body);
+        final results = data['data'] as List?;
 
-          // 获取封面
-          final coverUrl = 'https://coverartarchive.org/release/$releaseId/front';
-          final coverResponse = await http.get(Uri.parse(coverUrl));
+        if (results != null && results.isNotEmpty) {
+          for (final result in results) {
+            var coverUrl = result['album']?['cover_big'] as String?;
+            if (coverUrl == null) {
+              coverUrl = result['album']?['cover_medium'] as String?;
+            }
 
-          if (coverResponse.statusCode == 200) {
-            return coverResponse.bodyBytes;
+            if (coverUrl != null) {
+              coverUrl = coverUrl.replaceAll(r'\/', '/');
+
+              debugPrint('[CoverArt] Deezer found cover');
+
+              final imageResponse = await http.get(Uri.parse(coverUrl));
+              if (imageResponse.statusCode == 200 && imageResponse.bodyBytes.isNotEmpty) {
+                return imageResponse.bodyBytes;
+              }
+            }
           }
         }
       }
     } catch (e) {
-      debugPrint('MusicBrainz search error: $e');
+      debugPrint('[CoverArt] Deezer search error: $e');
     }
     return null;
   }
-  /// 从Last.fm搜索封面
-  Future<Uint8List?> _searchFromLastFm(Song song) async {
-    try {
-      // 注意：需要API key，这里使用公开的图片搜索方式
-      final query = Uri.encodeComponent('${song.title} ${song.artist} album cover');
-      final searchUrl = 'https://www.last.fm/music/${Uri.encodeComponent(song.artist)}/${Uri.encodeComponent(song.album)}/+images';
 
+  /// 从 Spotify 搜索封面（通过公开 API）
+  Future<Uint8List?> _searchFromSpotify(Song song) async {
+    try {
+      String query;
+      if (song.artist != '未知艺术家' && song.artist.isNotEmpty) {
+        query = 'track:${song.title} artist:${song.artist}';
+      } else {
+        query = 'track:${song.title}';
+      }
+
+      final encodedQuery = Uri.encodeQueryComponent(query);
+      final searchUrl = 'https://api.spotify.com/v1/search?q=$encodedQuery&type=track&limit=5';
+
+      debugPrint('[CoverArt] Spotify search: $searchUrl');
+
+      // 注意：Spotify API 需要 access token，这里尝试使用公开端点
+      // 如果失败，跳过此源
       final response = await http.get(
         Uri.parse(searchUrl),
         headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.0',
+          'User-Agent': 'RenaissanceMusicApp/1.0',
+          'Accept': 'application/json',
         },
       );
 
       if (response.statusCode == 200) {
-        // 从HTML中提取图片URL
-        final imageMatch = RegExp(r'src="([^"]+\.(?:jpg|jpeg|png))"').firstMatch(response.body);
-        if (imageMatch != null) {
-          var imageUrl = imageMatch.group(1)!;
-          // 确保URL是完整的
-          if (imageUrl.startsWith('//')) {
-            imageUrl = 'https:$imageUrl';
-          } else if (imageUrl.startsWith('/')) {
-            imageUrl = 'https://www.last.fm$imageUrl';
-          }
+        final data = json.decode(response.body);
+        final tracks = data['tracks']?['items'] as List?;
 
-          final imageResponse = await http.get(Uri.parse(imageUrl));
-          if (imageResponse.statusCode == 200) {
-            return imageResponse.bodyBytes;
+        if (tracks != null && tracks.isNotEmpty) {
+          for (final track in tracks) {
+            final images = track['album']?['images'] as List?;
+            if (images != null && images.isNotEmpty) {
+              // 找到中等尺寸的图片
+              String? imageUrl;
+              for (final image in images) {
+                final height = image['height'] as int?;
+                if (height != null && height >= 300 && height <= 640) {
+                  imageUrl = image['url'] as String?;
+                  break;
+                }
+              }
+              // 如果没找到中等尺寸，使用第一张
+              imageUrl ??= images.first['url'] as String?;
+
+              if (imageUrl != null) {
+                debugPrint('[CoverArt] Spotify found cover');
+
+                final imageResponse = await http.get(Uri.parse(imageUrl));
+                if (imageResponse.statusCode == 200 && imageResponse.bodyBytes.isNotEmpty) {
+                  return imageResponse.bodyBytes;
+                }
+              }
+            }
           }
         }
       }
     } catch (e) {
-      debugPrint('Last.fm search error: $e');
+      debugPrint('[CoverArt] Spotify search error: $e');
     }
     return null;
   }
 
-  /// 从Deezer搜索封面
-  Future<Uint8List?> _searchFromDeezer(Song song) async {
+  /// 从 MusicBrainz 搜索封面
+  Future<Uint8List?> _searchFromMusicBrainz(Song song) async {
     try {
-      final query = Uri.encodeComponent('${song.title} ${song.artist}');
-      final searchUrl = 'https://api.deezer.com/search?q=$query&limit=1';
+      String query;
+      if (song.artist != '未知艺术家' && song.artist.isNotEmpty) {
+        query = '${song.title} AND artist:${song.artist}';
+      } else {
+        query = song.title;
+      }
 
-      final response = await http.get(Uri.parse(searchUrl));
+      final encodedQuery = Uri.encodeQueryComponent(query);
+      final searchUrl = 'https://musicbrainz.org/ws/2/recording/?query=$encodedQuery&fmt=json&limit=3';
+
+      debugPrint('[CoverArt] MusicBrainz search: $searchUrl');
+
+      final response = await http.get(
+        Uri.parse(searchUrl),
+        headers: {
+          'User-Agent': 'RenaissanceMusicApp/1.0 (https://github.com/renaissance)',
+          'Accept': 'application/json',
+        },
+      );
 
       if (response.statusCode == 200) {
-        // 从JSON响应中提取封面URL
-        final coverMatch = RegExp(r'"cover_big":"([^"]+)"').firstMatch(response.body);
-        if (coverMatch != null) {
-          var coverUrl = coverMatch.group(1)!;
-          // 处理转义的URL
-          coverUrl = coverUrl.replaceAll(r'\/', '/');
+        final data = json.decode(response.body);
+        final recordings = data['recordings'] as List?;
 
-          final coverResponse = await http.get(Uri.parse(coverUrl));
-          if (coverResponse.statusCode == 200) {
-            return coverResponse.bodyBytes;
+        if (recordings != null && recordings.isNotEmpty) {
+          for (final recording in recordings) {
+            final releases = recording['releases'] as List?;
+            if (releases != null && releases.isNotEmpty) {
+              final releaseId = releases.first['id'] as String?;
+              if (releaseId != null) {
+                final coverUrl = 'https://coverartarchive.org/release/$releaseId/front-500';
+
+                final coverResponse = await http.get(
+                  Uri.parse(coverUrl),
+                  headers: {'User-Agent': 'RenaissanceMusicApp/1.0'},
+                );
+
+                if (coverResponse.statusCode == 200 && coverResponse.bodyBytes.isNotEmpty) {
+                  debugPrint('[CoverArt] MusicBrainz found cover');
+                  return coverResponse.bodyBytes;
+                }
+              }
+            }
           }
         }
       }
     } catch (e) {
-      debugPrint('Deezer search error: $e');
+      debugPrint('[CoverArt] MusicBrainz search error: $e');
     }
     return null;
+  }
+
+  /// 从 Last.fm 搜索封面
+  Future<Uint8List?> _searchFromLastFm(Song song) async {
+    try {
+      if (song.artist == '未知艺术家' || song.artist.isEmpty) {
+        return null;
+      }
+
+      final artist = Uri.encodeQueryComponent(song.artist);
+      final album = Uri.encodeQueryComponent(song.album.isNotEmpty ? song.album : song.title);
+      final searchUrl = 'https://ws.audioscrobbler.com/2.0/?method=album.getinfo&api_key=demo&artist=$artist&album=$album&format=json';
+
+      debugPrint('[CoverArt] Last.fm search: $searchUrl');
+
+      final response = await http.get(
+        Uri.parse(searchUrl),
+        headers: {'User-Agent': 'RenaissanceMusicApp/1.0'},
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        final album = data['album'];
+        final images = album?['image'] as List?;
+
+        if (images != null) {
+          // 找最大尺寸的图片
+          String? imageUrl;
+          for (final image in images.reversed) {
+            final url = image['#text'] as String?;
+            final size = image['size'] as String?;
+            if (url != null && url.isNotEmpty) {
+              imageUrl = url;
+              if (size == 'extralarge' || size == 'mega') break;
+            }
+          }
+
+          if (imageUrl != null && imageUrl.isNotEmpty) {
+            debugPrint('[CoverArt] Last.fm found cover');
+
+            final imageResponse = await http.get(Uri.parse(imageUrl));
+            if (imageResponse.statusCode == 200 && imageResponse.bodyBytes.isNotEmpty) {
+              return imageResponse.bodyBytes;
+            }
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint('[CoverArt] Last.fm search error: $e');
+    }
+    return null;
+  }
+
+  /// 生成缓存文件名
+  String _generateCacheFileName(Song song) {
+    final identifier = '${song.artist}_${song.title}_${song.album}'
+        .replaceAll(RegExp(r'[^a-zA-Z0-9\u4e00-\u9fa5]'), '_')
+        .toLowerCase();
+    return '${identifier}_cover.jpg';
   }
 
   /// 保存封面到缓存
   Future<void> _saveCoverToCache(Uint8List imageData, String cachePath) async {
     try {
-      // 使用image包处理图片，确保格式正确并压缩
       final image = img.decodeImage(imageData);
       if (image != null) {
-        // 调整大小以提高性能
         final resized = img.copyResize(image, width: 500);
         final jpegData = img.encodeJpg(resized, quality: 85);
 
         final file = File(cachePath);
         await file.writeAsBytes(jpegData);
       } else {
-        // 如果无法解码，直接保存原始数据
         final file = File(cachePath);
         await file.writeAsBytes(imageData);
       }
     } catch (e) {
-      debugPrint('Error saving cover to cache: $e');
-      // 直接保存原始数据作为后备
+      debugPrint('[CoverArt] Error saving cover to cache: $e');
       try {
         final file = File(cachePath);
         await file.writeAsBytes(imageData);
@@ -453,7 +615,6 @@ class CoverArtService {
 
   /// 获取默认封面路径
   String _getDefaultCoverPath(Song song) {
-    // 根据歌曲ID的哈希值选择默认封面
     final index = song.id.hashCode.abs() % 3;
     return 'assets/images/cover${index + 1}.jpg';
   }
@@ -469,9 +630,9 @@ class CoverArtService {
           await file.delete();
         }
       }
-      debugPrint('Cover cache cleared');
+      debugPrint('[CoverArt] Cover cache cleared');
     } catch (e) {
-      debugPrint('Error clearing cover cache: $e');
+      debugPrint('[CoverArt] Error clearing cover cache: $e');
     }
   }
 
@@ -487,7 +648,7 @@ class CoverArtService {
         }
       }
     } catch (e) {
-      debugPrint('Error calculating cache size: $e');
+      debugPrint('[CoverArt] Error calculating cache size: $e');
     }
 
     return totalSize;

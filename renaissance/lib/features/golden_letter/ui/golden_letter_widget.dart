@@ -59,29 +59,33 @@ class _GoldenLetterWidgetState extends ConsumerState<GoldenLetterWidget>
 
     final letter = letterState.letter!;
 
-    return AnimatedBuilder(
-      animation: _flipController,
-      builder: (context, child) {
-        final angle = _flipController.value * 3.14159;
-        final isFront = angle < 3.14159 / 2;
+    return Semantics(
+      container: false,
+      excludeSemantics: true,
+      child: AnimatedBuilder(
+        animation: _flipController,
+        builder: (context, child) {
+          final angle = _flipController.value * 3.14159;
+          final isFront = angle < 3.14159 / 2;
 
-        return GestureDetector(
-          onTap: _flipCard,
-          child: Transform(
-            transform: Matrix4.identity()
-              ..setEntry(3, 2, 0.001)
-              ..rotateY(angle),
-            alignment: Alignment.center,
-            child: isFront
-                ? _buildEnvelopeFront(letter)
-                : Transform(
-                    transform: Matrix4.identity()..rotateY(3.14159),
-                    alignment: Alignment.center,
-                    child: _buildLetterContent(letter),
-                  ),
-          ),
-        );
-      },
+          return GestureDetector(
+            onTap: _flipCard,
+            child: Transform(
+              transform: Matrix4.identity()
+                ..setEntry(3, 2, 0.001)
+                ..rotateY(angle),
+              alignment: Alignment.center,
+              child: isFront
+                  ? _buildEnvelopeFront(letter)
+                  : Transform(
+                      transform: Matrix4.identity()..rotateY(3.14159),
+                      alignment: Alignment.center,
+                      child: _buildLetterContent(letter),
+                    ),
+            ),
+          );
+        },
+      ),
     );
   }
 

@@ -61,166 +61,165 @@ class _BlurredCoverState extends ConsumerState<BlurredCover>
     final playerState = ref.watch(audioControllerProvider);
     final progress = playerState.progress;
 
-    // 根据进度计算模糊度
     final blurSigma = _calculateBlurSigma(progress);
     final unlockStage = _getUnlockStage(progress);
 
-    return AnimatedBuilder(
-      animation: _particleController,
-      builder: (context, child) {
-        return Container(
-          width: 400,
-          height: 400,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(20),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.4),
-                blurRadius: 40,
-                offset: const Offset(0, 20),
-              ),
-            ],
-          ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(20),
-            child: Stack(
-              fit: StackFit.expand,
-              children: [
-                _buildCoverImage(),
-
-                if (blurSigma > 0)
-                  BackdropFilter(
-                    filter: ImageFilter.blur(
-                      sigmaX: blurSigma,
-                      sigmaY: blurSigma,
-                    ),
-                    child: Container(
-                      color: _parseColor(widget.dominantColor)
-                              ?.withOpacity(0.3) ??
-                          AppTheme.warmBrown.withOpacity(0.3),
-                    ),
-                  ),
-
-                // 动态粒子效果
-                if (unlockStage != UnlockStage.revealed)
-                  CustomPaint(
-                    size: const Size(400, 400),
-                    painter: ParticlePainter(
-                      particles: _particles,
-                      animation: _particleController.value,
-                      progress: progress,
-                    ),
-                  ),
-
-                // 阶段信息覆盖层
-                if (unlockStage != UnlockStage.revealed)
-                  Container(
-                    decoration: BoxDecoration(
-                      gradient: RadialGradient(
-                        colors: [
-                          Colors.transparent,
-                          Colors.black.withOpacity(0.3),
-                        ],
-                      ),
-                    ),
-                  ),
-
-                // 年份显示
-                if (unlockStage == UnlockStage.mystery)
-                  Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          '${widget.year}',
-                          style: FluentTheme.of(context)
-                              .typography
-                              .title
-                              ?.copyWith(
-                                color: AppTheme.warmCream,
-                                fontSize: 64,
-                                fontWeight: FontWeight.bold,
-                                shadows: [
-                                  Shadow(
-                                    color: Colors.black.withOpacity(0.5),
-                                    blurRadius: 20,
-                                  ),
-                                ],
-                              ),
-                        ),
-                        const SizedBox(height: 16),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 20,
-                            vertical: 8,
-                          ),
-                          decoration: BoxDecoration(
-                            color: AppTheme.vintageGold.withOpacity(0.2),
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(
-                              color: AppTheme.vintageGold.withOpacity(0.5),
-                            ),
-                          ),
-                          child: Text(
-                            '盲盒旋律',
-                            style: TextStyle(
-                              color: AppTheme.vintageGold,
-                              fontSize: 14,
-                              letterSpacing: 4,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-
-                // 解锁成功动画
-                if (unlockStage == UnlockStage.revealed)
-                  Center(
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 24,
-                        vertical: 12,
-                      ),
-                      decoration: BoxDecoration(
-                        color: AppTheme.vintageGold.withOpacity(0.9),
-                        borderRadius: BorderRadius.circular(30),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(
-                            FluentIcons.check_mark,
-                            color: Colors.white,
-                            size: 20,
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            '重逢成功',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                              letterSpacing: 2,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  )
-                      .animate()
-                      .scale(
-                        begin: const Offset(0.5, 0.5),
-                        end: const Offset(1, 1),
-                        duration: 400.ms,
-                        curve: Curves.elasticOut,
-                      )
-                      .fadeIn(),
+    return Semantics(
+      container: false,
+      excludeSemantics: true,
+      child: AnimatedBuilder(
+        animation: _particleController,
+        builder: (context, child) {
+          return Container(
+            width: 400,
+            height: 400,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.4),
+                  blurRadius: 40,
+                  offset: const Offset(0, 20),
+                ),
               ],
             ),
-          ),
-        );
-      },
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(20),
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  _buildCoverImage(),
+
+                  if (blurSigma > 0)
+                    BackdropFilter(
+                      filter: ImageFilter.blur(
+                        sigmaX: blurSigma,
+                        sigmaY: blurSigma,
+                      ),
+                      child: Container(
+                        color: _parseColor(widget.dominantColor)
+                                ?.withOpacity(0.3) ??
+                            AppTheme.warmBrown.withOpacity(0.3),
+                      ),
+                    ),
+
+                  if (unlockStage != UnlockStage.revealed)
+                    CustomPaint(
+                      size: const Size(400, 400),
+                      painter: ParticlePainter(
+                        particles: _particles,
+                        animation: _particleController.value,
+                        progress: progress,
+                      ),
+                    ),
+
+                  if (unlockStage != UnlockStage.revealed)
+                    Container(
+                      decoration: BoxDecoration(
+                        gradient: RadialGradient(
+                          colors: [
+                            Colors.transparent,
+                            Colors.black.withOpacity(0.3),
+                          ],
+                        ),
+                      ),
+                    ),
+
+                  if (unlockStage == UnlockStage.mystery)
+                    Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            '${widget.year}',
+                            style: FluentTheme.of(context)
+                                .typography
+                                .title
+                                ?.copyWith(
+                                  color: AppTheme.warmCream,
+                                  fontSize: 64,
+                                  fontWeight: FontWeight.bold,
+                                  shadows: [
+                                    Shadow(
+                                      color: Colors.black.withOpacity(0.5),
+                                      blurRadius: 20,
+                                    ),
+                                  ],
+                                ),
+                          ),
+                          const SizedBox(height: 16),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 20,
+                              vertical: 8,
+                            ),
+                            decoration: BoxDecoration(
+                              color: AppTheme.vintageGold.withOpacity(0.2),
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(
+                                color: AppTheme.vintageGold.withOpacity(0.5),
+                              ),
+                            ),
+                            child: Text(
+                              '盲盒旋律',
+                              style: TextStyle(
+                                color: AppTheme.vintageGold,
+                                fontSize: 14,
+                                letterSpacing: 4,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                  if (unlockStage == UnlockStage.revealed)
+                    Center(
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 24,
+                          vertical: 12,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppTheme.vintageGold.withOpacity(0.9),
+                          borderRadius: BorderRadius.circular(30),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(
+                              FluentIcons.check_mark,
+                              color: Colors.white,
+                              size: 20,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              '重逢成功',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                                letterSpacing: 2,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    )
+                        .animate()
+                        .scale(
+                          begin: const Offset(0.5, 0.5),
+                          end: const Offset(1, 1),
+                          duration: 400.ms,
+                          curve: Curves.elasticOut,
+                        )
+                        .fadeIn(),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
     );
   }
 

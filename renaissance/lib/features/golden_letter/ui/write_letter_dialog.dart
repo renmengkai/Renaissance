@@ -314,14 +314,25 @@ class _WriteLetterDialogState extends ConsumerState<WriteLetterDialog> {
                     ),
                     const SizedBox(width: 8),
                     Expanded(
-                      child: SizedBox(
-                        width: 200,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.5),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: AppTheme.warmBrown.withOpacity(0.2),
+                          ),
+                        ),
                         child: TextBox(
                           controller: _authorController,
                           placeholder: '你的名字或昵称',
                           style: const TextStyle(
                             color: AppTheme.deepBrown,
                             fontSize: 14,
+                          ),
+                          decoration: const WidgetStatePropertyAll(
+                            BoxDecoration(
+                              color: Colors.transparent,
+                            ),
                           ),
                         ),
                       ),

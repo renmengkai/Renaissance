@@ -1,9 +1,11 @@
-import 'package:fluent_ui/fluent_ui.dart';
+import 'package:fluent_ui/fluent_ui.dart' as fluent;
+import 'package:fluent_ui/fluent_ui.dart' hide showDialog;
+import 'package:flutter/material.dart' hide Colors, Slider;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import '../../../core/theme/app_theme.dart';
-import '../../../shared/components/window_title_bar.dart';
+import '../../../shared/widgets/vintage_settings.dart';
 
-// 设置状态
 class SettingsState {
   final double masterVolume;
   final bool enableVisualizer;
@@ -52,7 +54,6 @@ class SettingsState {
   }
 }
 
-// 设置控制器
 class SettingsController extends StateNotifier<SettingsState> {
   SettingsController() : super(const SettingsState());
 
@@ -93,7 +94,6 @@ class SettingsController extends StateNotifier<SettingsState> {
   }
 }
 
-// Provider
 final settingsControllerProvider =
     StateNotifierProvider<SettingsController, SettingsState>((ref) {
   return SettingsController();
@@ -107,191 +107,220 @@ class SettingsPage extends ConsumerWidget {
     final settings = ref.watch(settingsControllerProvider);
     final controller = ref.read(settingsControllerProvider.notifier);
 
-    return ScaffoldPage(
-      header: const PageHeader(
-        title: Text('设置'),
-      ),
-      content: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // 音频设置
-            _buildSection(
-              context,
-              icon: FluentIcons.speakers,
-              title: '音频设置',
-              children: [
-                _buildVolumeSlider(
-                  context,
-                  label: '主音量',
-                  value: settings.masterVolume,
-                  onChanged: controller.setMasterVolume,
-                ),
-                const SizedBox(height: 16),
-                _buildDropdown(
-                  context,
-                  label: '音频质量',
-                  value: settings.audioQuality,
-                  items: const ['Low', 'Medium', 'High', 'Lossless'],
-                  onChanged: (value) {
-                    if (value != null) controller.setAudioQuality(value);
-                  },
-                ),
-                const SizedBox(height: 16),
-                _buildToggle(
-                  context,
-                  label: '自动播放',
-                  description: '启动时自动播放上次播放的歌曲',
-                  value: settings.autoPlay,
-                  onChanged: (_) => controller.toggleAutoPlay(),
-                ),
-              ],
-            ),
-
-            const SizedBox(height: 24),
-
-            // 播放设置
-            _buildSection(
-              context,
-              icon: FluentIcons.play_resume,
-              title: '播放设置',
-              children: [
-                _buildToggle(
-                  context,
-                  label: '淡入淡出',
-                  description: '歌曲切换时添加淡入淡出效果',
-                  value: settings.crossfade,
-                  onChanged: (_) => controller.toggleCrossfade(),
-                ),
-                if (settings.crossfade)
-                  Padding(
-                    padding: const EdgeInsets.only(left: 32, top: 8),
-                    child: _buildSlider(
-                      context,
-                      label: '淡入淡出时长',
-                      value: settings.crossfadeDuration,
-                      min: 0.5,
-                      max: 5.0,
-                      suffix: '秒',
-                      onChanged: controller.setCrossfadeDuration,
-                    ),
-                  ),
-              ],
-            ),
-
-            const SizedBox(height: 24),
-
-            // 显示设置
-            _buildSection(
-              context,
-              icon: FluentIcons.view,
-              title: '显示设置',
-              children: [
-                _buildToggle(
-                  context,
-                  label: '音频可视化',
-                  description: '显示音频可视化效果',
-                  value: settings.enableVisualizer,
-                  onChanged: (_) => controller.toggleVisualizer(),
-                ),
-                const SizedBox(height: 12),
-                _buildToggle(
-                  context,
-                  label: '歌词显示',
-                  description: '显示同步歌词',
-                  value: settings.enableLyrics,
-                  onChanged: (_) => controller.toggleLyrics(),
-                ),
-              ],
-            ),
-
-            const SizedBox(height: 24),
-
-            // 通知设置
-            _buildSection(
-              context,
-              icon: FluentIcons.ringer,
-              title: '通知设置',
-              children: [
-                _buildToggle(
-                  context,
-                  label: '启用通知',
-                  description: '接收播放和信件通知',
-                  value: settings.enableNotifications,
-                  onChanged: (_) => controller.toggleNotifications(),
-                ),
-              ],
-            ),
-
-            const SizedBox(height: 24),
-
-            // 存储设置
-            _buildSection(
-              context,
-              icon: FluentIcons.save_as,
-              title: '存储设置',
-              children: [
-                _buildPathSelector(
-                  context,
-                  label: '下载路径',
-                  path: settings.downloadPath.isEmpty
-                      ? '默认路径'
-                      : settings.downloadPath,
-                  onPressed: () {
-                    // 打开文件夹选择器
-                  },
-                ),
-                const SizedBox(height: 16),
-                _buildInfoRow(
-                  context,
-                  label: '缓存大小',
-                  value: '128 MB',
-                ),
-              ],
-            ),
-
-            const SizedBox(height: 24),
-
-            // 关于
-            _buildSection(
-              context,
-              icon: FluentIcons.info,
-              title: '关于',
-              children: [
-                _buildInfoRow(
-                  context,
-                  label: '版本',
-                  value: '1.0.0',
-                ),
-                const SizedBox(height: 12),
-                _buildInfoRow(
-                  context,
-                  label: '开发者',
-                  value: '文艺复兴团队',
-                ),
-                const SizedBox(height: 16),
-                FilledButton(
-                  onPressed: () {
-                    showDialog(
-                      context: context,
-                      builder: (context) => ContentDialog(
-                        title: const Text('检查更新'),
-                        content: const Text('当前已是最新版本'),
-                        actions: [
-                          Button(
-                            child: const Text('确定'),
-                            onPressed: () => Navigator.pop(context),
-                          ),
-                        ],
-                      ),
-                    );
-                  },
-                  child: const Text('检查更新'),
-                ),
-              ],
-            ),
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            AppTheme.softBlack,
+            AppTheme.charcoal,
           ],
+        ),
+      ),
+      child: ScaffoldPage(
+        header: PageHeader(
+          title: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: AppTheme.vintageGold.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(
+                  FluentIcons.settings,
+                  color: AppTheme.vintageGold,
+                  size: 18,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Text(
+                '设置',
+                style: TextStyle(
+                  color: AppTheme.warmCream,
+                  fontSize: 20,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ).animate().fadeIn(duration: 300.ms).slideX(begin: -0.1, end: 0),
+        ),
+        content: SingleChildScrollView(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildSection(
+                context,
+                icon: FluentIcons.speakers,
+                title: '音频设置',
+                delay: 100.ms,
+                children: [
+                  VintageSlider(
+                    label: '主音量',
+                    value: settings.masterVolume,
+                    onChanged: controller.setMasterVolume,
+                  ),
+                  const SizedBox(height: 16),
+                  VintageDropdown<String>(
+                    value: settings.audioQuality,
+                    label: '音频质量',
+                    items: [
+                      DropdownItem(value: 'Low', label: '低'),
+                      DropdownItem(value: 'Medium', label: '中'),
+                      DropdownItem(value: 'High', label: '高'),
+                      DropdownItem(value: 'Lossless', label: '无损'),
+                    ],
+                    onChanged: (value) {
+                      if (value != null) controller.setAudioQuality(value);
+                    },
+                  ),
+                  const SizedBox(height: 12),
+                  VintageToggleSwitch(
+                    label: '自动播放',
+                    description: '启动时自动播放上次播放的歌曲',
+                    value: settings.autoPlay,
+                    onChanged: (_) => controller.toggleAutoPlay(),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 24),
+              _buildSection(
+                context,
+                icon: FluentIcons.play_resume,
+                title: '播放设置',
+                delay: 200.ms,
+                children: [
+                  VintageToggleSwitch(
+                    label: '淡入淡出',
+                    description: '歌曲切换时添加淡入淡出效果',
+                    value: settings.crossfade,
+                    onChanged: (_) => controller.toggleCrossfade(),
+                  ),
+                  if (settings.crossfade)
+                    Padding(
+                      padding: const EdgeInsets.only(left: 0, top: 16),
+                      child: VintageSlider(
+                        label: '淡入淡出时长',
+                        value: settings.crossfadeDuration / 5.0,
+                        min: 0.1,
+                        max: 1.0,
+                        suffix: '秒',
+                        onChanged: (v) => controller.setCrossfadeDuration(v * 5),
+                      ),
+                    ),
+                ],
+              ),
+              const SizedBox(height: 24),
+              _buildSection(
+                context,
+                icon: FluentIcons.view,
+                title: '显示设置',
+                delay: 300.ms,
+                children: [
+                  VintageToggleSwitch(
+                    label: '音频可视化',
+                    description: '显示音频可视化效果',
+                    value: settings.enableVisualizer,
+                    onChanged: (_) => controller.toggleVisualizer(),
+                  ),
+                  const SizedBox(height: 12),
+                  VintageToggleSwitch(
+                    label: '歌词显示',
+                    description: '显示同步歌词',
+                    value: settings.enableLyrics,
+                    onChanged: (_) => controller.toggleLyrics(),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 24),
+              _buildSection(
+                context,
+                icon: FluentIcons.ringer,
+                title: '通知设置',
+                delay: 400.ms,
+                children: [
+                  VintageToggleSwitch(
+                    label: '启用通知',
+                    description: '接收播放和信件通知',
+                    value: settings.enableNotifications,
+                    onChanged: (_) => controller.toggleNotifications(),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 24),
+              _buildSection(
+                context,
+                icon: FluentIcons.save_as,
+                title: '存储设置',
+                delay: 500.ms,
+                children: [
+                  _buildPathSelector(
+                    context,
+                    label: '下载路径',
+                    path: settings.downloadPath.isEmpty
+                        ? '默认路径'
+                        : settings.downloadPath,
+                    onPressed: () {},
+                  ),
+                  const SizedBox(height: 16),
+                  InfoRow(
+                    label: '缓存大小',
+                    value: '128 MB',
+                  ),
+                ],
+              ),
+              const SizedBox(height: 24),
+              _buildSection(
+                context,
+                icon: FluentIcons.info,
+                title: '关于',
+                delay: 600.ms,
+                children: [
+                  InfoRow(
+                    label: '版本',
+                    value: '1.0.0',
+                  ),
+                  const SizedBox(height: 8),
+                  InfoRow(
+                    label: '开发者',
+                    value: '文艺复兴团队',
+                  ),
+                  const SizedBox(height: 20),
+                  Row(
+                    children: [
+                      VintageButton(
+                        text: '检查更新',
+                        isFilled: true,
+                        onPressed: () {
+                          fluent.showDialog(
+                            context: context,
+                            builder: (context) => ContentDialog(
+                              title: const Text('检查更新'),
+                              content: const Text('当前已是最新版本'),
+                              actions: [
+                                Button(
+                                  child: const Text('确定'),
+                                  onPressed: () => Navigator.pop(context),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+                      const SizedBox(width: 12),
+                      VintageButton(
+                        text: '清除缓存',
+                        onPressed: () {},
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              const SizedBox(height: 40),
+            ],
+          ),
         ),
       ),
     );
@@ -302,199 +331,16 @@ class SettingsPage extends ConsumerWidget {
     required IconData icon,
     required String title,
     required List<Widget> children,
+    Duration? delay,
   }) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: AppTheme.acrylicDark,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: AppTheme.warmBrown.withOpacity(0.2),
-        ),
-      ),
+    return GlassCard(
+      icon: icon,
+      title: title,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(
-                icon,
-                color: AppTheme.vintageGold,
-                size: 20,
-              ),
-              const SizedBox(width: 12),
-              Text(
-                title,
-                style: FluentTheme.of(context).typography.subtitle?.copyWith(
-                  color: AppTheme.warmCream,
-                  fontSize: 16,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          const Divider(),
-          const SizedBox(height: 16),
-          ...children,
-        ],
+        children: children,
       ),
-    );
-  }
-
-  Widget _buildToggle(
-    BuildContext context, {
-    required String label,
-    required String description,
-    required bool value,
-    required ValueChanged<bool> onChanged,
-  }) {
-    return Row(
-      children: [
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                label,
-                style: const TextStyle(
-                  color: AppTheme.warmCream,
-                  fontSize: 14,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                description,
-                style: TextStyle(
-                  color: AppTheme.warmBeige.withOpacity(0.6),
-                  fontSize: 12,
-                ),
-              ),
-            ],
-          ),
-        ),
-        ToggleSwitch(
-          checked: value,
-          onChanged: onChanged,
-        ),
-      ],
-    );
-  }
-
-  Widget _buildVolumeSlider(
-    BuildContext context, {
-    required String label,
-    required double value,
-    required ValueChanged<double> onChanged,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              label,
-              style: const TextStyle(
-                color: AppTheme.warmCream,
-                fontSize: 14,
-              ),
-            ),
-            Text(
-              '${(value * 100).toInt()}%',
-              style: TextStyle(
-                color: AppTheme.vintageGold,
-                fontSize: 12,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 8),
-        Slider(
-          value: value,
-          onChanged: onChanged,
-        ),
-      ],
-    );
-  }
-
-  Widget _buildSlider(
-    BuildContext context, {
-    required String label,
-    required double value,
-    required double min,
-    required double max,
-    required String suffix,
-    required ValueChanged<double> onChanged,
-  }) {
-    return Row(
-      children: [
-        Expanded(
-          flex: 2,
-          child: Text(
-            label,
-            style: TextStyle(
-              color: AppTheme.warmBeige.withOpacity(0.8),
-              fontSize: 13,
-            ),
-          ),
-        ),
-        Expanded(
-          flex: 5,
-          child: Slider(
-            value: value,
-            min: min,
-            max: max,
-            onChanged: onChanged,
-          ),
-        ),
-        Expanded(
-          flex: 1,
-          child: Text(
-            '${value.toStringAsFixed(1)}$suffix',
-            style: TextStyle(
-              color: AppTheme.warmBeige.withOpacity(0.6),
-              fontSize: 12,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildDropdown(
-    BuildContext context, {
-    required String label,
-    required String value,
-    required List<String> items,
-    required ValueChanged<String?> onChanged,
-  }) {
-    return Row(
-      children: [
-        Expanded(
-          flex: 2,
-          child: Text(
-            label,
-            style: const TextStyle(
-              color: AppTheme.warmCream,
-              fontSize: 14,
-            ),
-          ),
-        ),
-        Expanded(
-          flex: 3,
-          child: ComboBox<String>(
-            value: value,
-            items: items.map((item) {
-              return ComboBoxItem(
-                value: item,
-                child: Text(item),
-              );
-            }).toList(),
-            onChanged: onChanged,
-          ),
-        ),
-      ],
-    );
+    ).animate().fadeIn(delay: delay ?? 0.ms, duration: 400.ms).slideY(begin: 0.1, end: 0);
   }
 
   Widget _buildPathSelector(
@@ -503,83 +349,49 @@ class SettingsPage extends ConsumerWidget {
     required String path,
     required VoidCallback onPressed,
   }) {
-    return Row(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Expanded(
-          flex: 2,
-          child: Text(
-            label,
-            style: const TextStyle(
-              color: AppTheme.warmCream,
-              fontSize: 14,
-            ),
+        Text(
+          label,
+          style: const TextStyle(
+            color: AppTheme.warmBeige,
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
           ),
         ),
-        Expanded(
-          flex: 4,
-          child: Row(
-            children: [
-              Expanded(
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 8,
-                  ),
-                  decoration: BoxDecoration(
-                    color: AppTheme.softBlack.withOpacity(0.5),
-                    borderRadius: BorderRadius.circular(4),
-                    border: Border.all(
-                      color: AppTheme.warmBrown.withOpacity(0.3),
-                    ),
-                  ),
-                  child: Text(
-                    path,
-                    style: TextStyle(
-                      color: AppTheme.warmBeige.withOpacity(0.7),
-                      fontSize: 13,
-                    ),
-                    overflow: TextOverflow.ellipsis,
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            Expanded(
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 10,
+                ),
+                decoration: BoxDecoration(
+                  color: AppTheme.softBlack.withOpacity(0.5),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: AppTheme.warmBrown.withOpacity(0.3),
                   ),
                 ),
+                child: Text(
+                  path,
+                  style: TextStyle(
+                    color: AppTheme.warmBeige.withOpacity(0.7),
+                    fontSize: 12,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
-              const SizedBox(width: 8),
-              Button(
-                onPressed: onPressed,
-                child: const Text('浏览'),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildInfoRow(
-    BuildContext context, {
-    required String label,
-    required String value,
-  }) {
-    return Row(
-      children: [
-        Expanded(
-          flex: 2,
-          child: Text(
-            label,
-            style: TextStyle(
-              color: AppTheme.warmBeige.withOpacity(0.8),
-              fontSize: 13,
             ),
-          ),
-        ),
-        Expanded(
-          flex: 3,
-          child: Text(
-            value,
-            style: const TextStyle(
-              color: AppTheme.warmCream,
-              fontSize: 13,
+            const SizedBox(width: 12),
+            VintageButton(
+              text: '浏览',
+              onPressed: onPressed,
             ),
-          ),
+          ],
         ),
       ],
     );

@@ -4,6 +4,9 @@ import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as path;
 import 'package:file_selector/file_selector.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:audiotagger/audiotagger.dart';
+import 'package:audiotagger/models/tag.dart';
+import 'package:audiotagger/models/audiofile.dart';
 import '../models/song.dart';
 import '../models/playlist.dart';
 import 'cover_art_service.dart';
@@ -20,6 +23,7 @@ class LocalMusicService {
   ];
 
   static const String _musicDirectoryKey = 'music_directory_path';
+  static final _tagger = Audiotagger();
 
   /// 获取保存的音乐文件夹路径
   static Future<String?> getSavedMusicDirectory() async {
@@ -52,7 +56,6 @@ class LocalMusicService {
 
   /// 获取音乐文件夹路径（优先使用用户选择的，否则使用默认）
   static Future<String> getMusicDirectory() async {
-    // 先尝试获取用户选择的目录
     final savedDir = await getSavedMusicDirectory();
     if (savedDir != null) {
       final dir = Directory(savedDir);
@@ -61,7 +64,6 @@ class LocalMusicService {
       }
     }
 
-    // 使用应用文档目录下的 Music 文件夹作为默认
     final appDir = await getApplicationDocumentsDirectory();
     final musicDir = Directory(path.join(appDir.path, 'Renaissance', 'Music'));
 
@@ -91,15 +93,13 @@ class LocalMusicService {
         if (entity is File) {
           final ext = path.extension(entity.path).toLowerCase();
           if (_supportedExtensions.contains(ext)) {
-            final fileName = path.basenameWithoutExtension(entity.path);
-            final song = _createSongFromFileQuick(entity.path, fileName, songs.length);
+            final song = await _createSongFromFile(entity.path, songs.length);
             songs.add(song);
-            debugPrint('Found song: ${song.title} - ${song.audioUrl}');
+            debugPrint('Found song: ${song.title} by ${song.artist}');
           }
         }
       }
 
-      // 如果没有找到歌曲，添加默认的示例歌曲
       if (songs.isEmpty) {
         debugPrint('No local songs found, using fallback songs');
         return _getFallbackSongs();
@@ -115,16 +115,57 @@ class LocalMusicService {
     return songs;
   }
 
-  /// 快速创建 Song 对象（不等待封面加载）
-  static Song _createSongFromFileQuick(String filePath, String fileName, int index) {
+  /// 从文件创建 Song 对象（尝试读取元数据）
+  static Future<Song> _createSongFromFile(String filePath, int index) async {
+    final fileName = path.basenameWithoutExtension(filePath);
+
+    // 默认值
     String title = fileName;
     String artist = '未知艺术家';
     String album = '本地音乐';
+    int year = DateTime.now().year;
+    Duration duration = const Duration(minutes: 3, seconds: 30);
 
+    // 尝试从文件名解析
     final parts = fileName.split(' - ');
     if (parts.length >= 2) {
       artist = parts[0].trim();
       title = parts[1].trim();
+    }
+
+    // 尝试读取音频元数据 (仅支持 Android)
+    if (Platform.isAndroid) {
+      try {
+        final tag = await _tagger.readTags(
+          path: filePath,
+        );
+
+        if (tag != null) {
+          // 使用元数据覆盖默认值
+          if (tag.title != null && tag.title!.isNotEmpty) {
+            title = tag.title!;
+          }
+          if (tag.artist != null && tag.artist!.isNotEmpty) {
+            artist = tag.artist!;
+          }
+          if (tag.album != null && tag.album!.isNotEmpty) {
+            album = tag.album!;
+          }
+          if (tag.year != null && tag.year!.isNotEmpty) {
+            year = int.tryParse(tag.year!) ?? year;
+          }
+
+          debugPrint('[Metadata] $title by $artist from $album ($year)');
+        }
+
+        // 读取音频时长
+        final audioFile = await _tagger.readAudioFile(path: filePath);
+        if (audioFile != null && audioFile.length != null) {
+          duration = Duration(milliseconds: audioFile.length!);
+        }
+      } catch (e) {
+        debugPrint('[Metadata] Could not read metadata for $filePath: $e');
+      }
     }
 
     final colors = [
@@ -139,7 +180,6 @@ class LocalMusicService {
     ];
     final color = colors[index % colors.length];
 
-    // 使用文件路径的 hash 作为唯一 ID，避免和备选歌曲冲突
     final uniqueId = 'local_file_${filePath.hashCode}';
 
     return Song(
@@ -147,10 +187,10 @@ class LocalMusicService {
       title: title,
       artist: artist,
       album: album,
-      year: DateTime.now().year,
+      year: year,
       coverUrl: 'assets/images/cover${(index % 3) + 1}.jpg',
       audioUrl: filePath,
-      duration: const Duration(minutes: 3, seconds: 30),
+      duration: duration,
       dominantColor: color,
       hasGoldenLetter: index < 3,
     );
@@ -161,7 +201,7 @@ class LocalMusicService {
     try {
       final coverArtService = CoverArtService();
       return await coverArtService.getCoverArt(song).timeout(
-        const Duration(seconds: 5),
+        const Duration(seconds: 10),
         onTimeout: () => song.coverUrl,
       );
     } catch (e) {
