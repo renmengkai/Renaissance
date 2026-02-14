@@ -53,6 +53,18 @@ class _PlayerPageState extends ConsumerState<PlayerPage> {
   // 当前启用的音乐源列表
   List<MusicSource> _enabledSources = [];
 
+  // 分页加载相关状态
+  int _currentPage = 0;
+  bool _isLoadingMore = false;
+  bool _hasMoreData = true;
+  static const int _pageSize = 100;
+  final ScrollController _scrollController = ScrollController();
+  // 自动连续加载模式（无需等待用户滚动）
+  bool _autoLoadMode = true;
+
+  // 歌曲封面缓存
+  final Map<String, String> _songCoverCache = {};
+
   @override
   void initState() {
     super.initState();
@@ -60,21 +72,37 @@ class _PlayerPageState extends ConsumerState<PlayerPage> {
       ref.read(loFiMixerProvider.notifier).initialize();
       _loadSongs();
     });
+    _scrollController.addListener(_onScroll);
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _onScroll() {
+    if (_scrollController.position.pixels >=
+        _scrollController.position.maxScrollExtent - 200) {
+      _loadMoreSongs();
+    }
   }
 
   Future<void> _loadSongs() async {
     setState(() {
       _isLoading = true;
+      _currentPage = 0;
+      _hasMoreData = true;
     });
 
     final stopwatch = Stopwatch()..start();
 
-    // 使用 MusicSourceManager 获取所有启用的音乐源中的歌曲
+    // 使用 MusicSourceManager 获取所有启用的音乐源中的歌曲（第一页）
     final manager = ref.read(musicSourceManagerProvider.notifier);
     final sources = ref.read(musicSourceManagerProvider);
     debugPrint('[PlayerPage] Sources: ${sources.map((s) => '${s.name} (enabled: ${s.isEnabled})').toList()}');
 
-    final songs = await manager.getAllSongs();
+    final songs = await manager.getAllSongs(page: 0, pageSize: _pageSize);
     final musicPath = await LocalMusicService.getMusicDirectoryPath();
 
     if (songs.isNotEmpty) {
@@ -92,6 +120,7 @@ class _PlayerPageState extends ConsumerState<PlayerPage> {
     setState(() {
       _localSongs = songs;
       _isLoading = false;
+      _hasMoreData = songs.length >= _pageSize;
       _musicDirectoryPath = musicPath;
       _enabledSources = enabledSources;
     });
@@ -99,8 +128,168 @@ class _PlayerPageState extends ConsumerState<PlayerPage> {
     stopwatch.stop();
     debugPrint('[PlayerPage] Loaded ${songs.length} songs in ${stopwatch.elapsedMilliseconds}ms');
 
+    // 设置封面加载回调，当异步加载完成时更新UI
+    CoverArtService().onCoverLoaded = (song, coverPath) {
+      if (mounted && coverPath.isNotEmpty) {
+        setState(() {
+          _songCoverCache[song.id] = coverPath;
+        });
+      }
+    };
+
     // 异步预加载封面，不阻塞UI
+    // 注意：preloadCovers 已经在后台异步加载封面到 CoverArtService 的内存缓存
     CoverArtService().preloadCovers(songs);
+
+    // 延迟加载封面到UI缓存，确保不阻塞歌曲加载和播放
+    // 使用延迟执行，让歌曲列表先显示出来
+    Future.delayed(const Duration(milliseconds: 500), () {
+      if (mounted) {
+        _loadSongCovers(songs);
+      }
+    });
+
+    // 自动连续加载模式：如果还有更多数据，自动开始加载下一页
+    if (_autoLoadMode && _hasMoreData && songs.length >= _pageSize) {
+      debugPrint('[PlayerPage] Auto load mode: starting to load next pages...');
+      Future.delayed(const Duration(milliseconds: 200), () {
+        if (mounted) {
+          _loadMoreSongs();
+        }
+      });
+    }
+  }
+
+  /// 异步加载每首歌的封面 - 使用批量并行加载，避免阻塞UI和音乐播放
+  void _loadSongCovers(List<Song> songs) async {
+    final coverArtService = CoverArtService();
+
+    // 首先检查哪些歌曲已经有缓存（内存或磁盘）
+    final songsNeedLoading = <Song>[];
+    final cachedCovers = <String, String>{};
+
+    for (final song in songs) {
+      // 同步检查内存缓存，不阻塞
+      final cachedPath = coverArtService.getCoverFromMemoryCache(song);
+      if (cachedPath != null && cachedPath.isNotEmpty) {
+        cachedCovers[song.id] = cachedPath;
+      } else {
+        // 内存中没有，需要异步检查磁盘缓存或网络加载
+        songsNeedLoading.add(song);
+      }
+    }
+
+    // 批量更新内存中已缓存的封面到UI
+    if (mounted && cachedCovers.isNotEmpty) {
+      setState(() {
+        _songCoverCache.addAll(cachedCovers);
+      });
+    }
+
+    // 如果没有需要加载的封面，直接返回
+    if (songsNeedLoading.isEmpty) return;
+
+    debugPrint(
+        '[PlayerPage] Loading covers for ${songsNeedLoading.length} songs (skipped ${cachedCovers.length} memory cached)');
+
+    // 分批并行加载剩余需要加载的封面
+    const batchSize = 5;
+    for (int i = 0; i < songsNeedLoading.length; i += batchSize) {
+      final batch = songsNeedLoading.skip(i).take(batchSize).toList();
+
+      // 并行加载当前批次的封面
+      final futures = batch.map((song) async {
+        try {
+          // getCoverArt 会检查磁盘缓存，如果没有则从网络加载并保存到磁盘
+          final coverPath = await coverArtService.getCoverArt(song);
+          return (song.id, coverPath);
+        } catch (e) {
+          debugPrint('[PlayerPage] Error loading cover for ${song.title}: $e');
+          return (song.id, null);
+        }
+      });
+
+      final results = await Future.wait(futures);
+
+      // 批量更新缓存，只更新有变化的（排除默认封面）
+      if (mounted) {
+        final newCovers = <String, String>{};
+        for (final (songId, coverPath) in results) {
+          if (coverPath != null &&
+              coverPath.isNotEmpty &&
+              !coverPath.startsWith('assets/') && // 排除默认封面
+              _songCoverCache[songId] != coverPath) {
+            newCovers[songId] = coverPath;
+          }
+        }
+
+        if (newCovers.isNotEmpty) {
+          setState(() {
+            _songCoverCache.addAll(newCovers);
+          });
+        }
+      }
+
+      // 每批之间添加小延迟，避免请求过于频繁影响音乐播放
+      if (i + batchSize < songsNeedLoading.length) {
+        await Future.delayed(const Duration(milliseconds: 100));
+      }
+    }
+  }
+
+  /// 加载更多歌曲（分页加载）
+  Future<void> _loadMoreSongs() async {
+    if (_isLoadingMore || !_hasMoreData) return;
+
+    setState(() {
+      _isLoadingMore = true;
+    });
+
+    final nextPage = _currentPage + 1;
+    debugPrint('[PlayerPage] Loading more songs, page: $nextPage');
+
+    try {
+      final manager = ref.read(musicSourceManagerProvider.notifier);
+      final newSongs = await manager.getAllSongs(page: nextPage, pageSize: _pageSize);
+
+      if (newSongs.isEmpty) {
+        setState(() {
+          _hasMoreData = false;
+          _isLoadingMore = false;
+        });
+        debugPrint('[PlayerPage] No more songs to load');
+        return;
+      }
+
+      setState(() {
+        _localSongs.addAll(newSongs);
+        _currentPage = nextPage;
+        _hasMoreData = newSongs.length >= _pageSize;
+        _isLoadingMore = false;
+      });
+
+      debugPrint('[PlayerPage] Loaded ${newSongs.length} more songs, total: ${_localSongs.length}');
+
+      // 异步预加载新加载歌曲的封面
+      CoverArtService().preloadCovers(newSongs);
+      _loadSongCovers(newSongs);
+
+      // 自动连续加载模式：如果还有更多数据，继续加载下一页
+      if (_autoLoadMode && _hasMoreData) {
+        debugPrint('[PlayerPage] Auto load mode: loading next page...');
+        // 使用 Future.delayed 避免阻塞UI
+        Future.delayed(const Duration(milliseconds: 100), () {
+          if (mounted) {
+            _loadMoreSongs();
+          }
+        });
+      }
+    } catch (e) {
+      debugPrint('[PlayerPage] Error loading more songs: $e');
+      setState(() {
+        _isLoadingMore = false;
+      });
+    }
   }
 
   Future<void> _selectMusicDirectory() async {
@@ -128,10 +317,19 @@ class _PlayerPageState extends ConsumerState<PlayerPage> {
 
     playlistController.playSong(song);
 
+    // 暂停封面加载，优先保证音乐播放流畅
+    CoverArtService().pauseLoading();
+
     // 加载歌曲（现在是异步的，不会阻塞UI）
     audioController.loadSong(song).then((_) {
       // 歌曲加载完成后播放
       audioController.play();
+
+      // 延迟恢复封面加载，等待音乐缓存足够
+      // 给音乐播放留出网络带宽
+      Future.delayed(const Duration(seconds: 3), () {
+        CoverArtService().resumeLoading();
+      });
     });
 
     // 封面加载在后台执行，不阻塞UI更新
@@ -211,6 +409,26 @@ class _PlayerPageState extends ConsumerState<PlayerPage> {
     final playerState = ref.watch(audioControllerProvider);
     final letterState = ref.watch(letterControllerProvider);
     final currentSong = playerState.currentSong;
+
+    // 监听音乐播放状态，在音乐播放一段时间后恢复封面加载
+    ref.listen(audioControllerProvider, (previous, current) {
+      if (previous == null || current == null) return;
+      // 当音乐开始播放时，检查是否需要恢复封面加载
+      if (!previous.isPlaying && current.isPlaying) {
+        // 音乐刚开始播放，确保封面加载已暂停
+        CoverArtService().pauseLoading();
+      }
+      // 当音乐播放了一段时间（位置超过3秒），恢复封面加载
+      if (current.isPlaying &&
+          current.position.inSeconds >= 3 &&
+          previous.position.inSeconds < 3) {
+        CoverArtService().resumeLoading();
+      }
+      // 当音乐暂停时，可以恢复封面加载
+      if (previous.isPlaying && !current.isPlaying) {
+        CoverArtService().resumeLoading();
+      }
+    });
 
     // 监听音乐源变化，当源变化时重新加载歌曲
     ref.listen(musicSourceManagerProvider, (previous, next) {
@@ -444,9 +662,24 @@ class _PlayerPageState extends ConsumerState<PlayerPage> {
                             ),
                           )
                     : ListView.builder(
+                        controller: _scrollController,
                         padding: const EdgeInsets.symmetric(vertical: 4),
-                        itemCount: _localSongs.length,
+                        itemCount: _localSongs.length + (_isLoadingMore ? 1 : 0),
                         itemBuilder: (context, index) {
+                          if (index == _localSongs.length) {
+                            return Container(
+                              padding: const EdgeInsets.all(16),
+                              alignment: Alignment.center,
+                              child: const SizedBox(
+                                width: 24,
+                                height: 24,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  valueColor: AlwaysStoppedAnimation<Color>(AppTheme.vintageGold),
+                                ),
+                              ),
+                            );
+                          }
                           final song = _localSongs[index];
                           final isPlaying =
                               ref.watch(audioControllerProvider).currentSong?.id ==
@@ -968,19 +1201,39 @@ class _PlayerPageState extends ConsumerState<PlayerPage> {
                         ),
                       )
                     : ListView.builder(
+                        controller: _scrollController,
                         padding: const EdgeInsets.symmetric(vertical: 4),
-                        itemCount: _localSongs.length,
+                        itemCount: _localSongs.length + (_isLoadingMore ? 1 : 0),
                         itemBuilder: (context, index) {
+                          if (index == _localSongs.length) {
+                            return Container(
+                              padding: const EdgeInsets.all(16),
+                              alignment: Alignment.center,
+                              child: const SizedBox(
+                                width: 24,
+                                height: 24,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  valueColor: AlwaysStoppedAnimation<Color>(AppTheme.vintageGold),
+                                ),
+                              ),
+                            );
+                          }
                           final song = _localSongs[index];
                           final isPlaying =
                               ref.watch(audioControllerProvider).currentSong?.id ==
                                   song.id;
+                          // 优先使用缓存的封面，如果没有则使用 song.coverUrl
+                          final cachedCover = _songCoverCache[song.id];
+                          final coverPath = isPlaying
+                              ? (_currentCoverPath ?? cachedCover ?? song.coverUrl)
+                              : (cachedCover ?? song.coverUrl);
 
                           return EnhancedSongListItem(
                             song: song,
                             isPlaying: isPlaying,
                             onTap: () => _loadAndPlaySong(song),
-                            coverPath: isPlaying ? _currentCoverPath : null,
+                            coverPath: coverPath,
                             index: index,
                           );
                         },
@@ -1146,7 +1399,12 @@ class _PlayerPageState extends ConsumerState<PlayerPage> {
 
   void _switchToSource(MusicSource source) async {
     final manager = ref.read(musicSourceManagerProvider.notifier);
-    final songs = await manager.getSongsFromSource(source);
+    final songs = await manager.getSongsFromSource(source, page: 0, pageSize: _pageSize);
+
+    setState(() {
+      _currentPage = 0;
+      _hasMoreData = songs.length >= _pageSize;
+    });
 
     if (songs.isNotEmpty) {
       final playlist = Playlist(
@@ -1161,6 +1419,70 @@ class _PlayerPageState extends ConsumerState<PlayerPage> {
       });
 
       CoverArtService().preloadCovers(songs);
+
+      // 自动连续加载模式：如果还有更多数据，自动开始加载下一页
+      if (_autoLoadMode && _hasMoreData && songs.length >= _pageSize) {
+        debugPrint('[PlayerPage] Auto load mode: starting to load next pages for source ${source.name}...');
+        Future.delayed(const Duration(milliseconds: 200), () {
+          if (mounted) {
+            _loadMoreSongsForSource(source);
+          }
+        });
+      }
+    }
+  }
+
+  /// 为特定音乐源加载更多歌曲（分页加载）
+  Future<void> _loadMoreSongsForSource(MusicSource source) async {
+    if (_isLoadingMore || !_hasMoreData) return;
+
+    setState(() {
+      _isLoadingMore = true;
+    });
+
+    final nextPage = _currentPage + 1;
+    debugPrint('[PlayerPage] Loading more songs for source ${source.name}, page: $nextPage');
+
+    try {
+      final manager = ref.read(musicSourceManagerProvider.notifier);
+      final newSongs = await manager.getSongsFromSource(source, page: nextPage, pageSize: _pageSize);
+
+      if (newSongs.isEmpty) {
+        setState(() {
+          _hasMoreData = false;
+          _isLoadingMore = false;
+        });
+        debugPrint('[PlayerPage] No more songs to load for source ${source.name}');
+        return;
+      }
+
+      setState(() {
+        _localSongs.addAll(newSongs);
+        _currentPage = nextPage;
+        _hasMoreData = newSongs.length >= _pageSize;
+        _isLoadingMore = false;
+      });
+
+      debugPrint('[PlayerPage] Loaded ${newSongs.length} more songs for source ${source.name}, total: ${_localSongs.length}');
+
+      // 异步预加载新加载歌曲的封面
+      CoverArtService().preloadCovers(newSongs);
+      _loadSongCovers(newSongs);
+
+      // 自动连续加载模式：如果还有更多数据，继续加载下一页
+      if (_autoLoadMode && _hasMoreData) {
+        debugPrint('[PlayerPage] Auto load mode: loading next page for source ${source.name}...');
+        Future.delayed(const Duration(milliseconds: 100), () {
+          if (mounted) {
+            _loadMoreSongsForSource(source);
+          }
+        });
+      }
+    } catch (e) {
+      debugPrint('[PlayerPage] Error loading more songs for source ${source.name}: $e');
+      setState(() {
+        _isLoadingMore = false;
+      });
     }
   }
 

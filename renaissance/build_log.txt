@@ -1,0 +1,299 @@
+[ +288 ms] Artifact Instance of 'MaterialFonts' is not required, skipping update.
+[        ] Artifact Instance of 'GradleWrapper' is not required, skipping update.
+[        ] Artifact Instance of 'AndroidGenSnapshotArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'AndroidInternalBuildArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'IOSEngineArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'FlutterWebSdk' is not required, skipping update.
+[        ] Artifact Instance of 'LegacyCanvasKitRemover' is not required, skipping update.
+[        ] Artifact Instance of 'FlutterSdk' is not required, skipping update.
+[        ] Artifact Instance of 'WindowsEngineArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'MacOSEngineArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'LinuxEngineArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'LinuxFuchsiaSDKArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'MacOSFuchsiaSDKArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'FlutterRunnerSDKArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'FlutterRunnerDebugSymbols' is not required, skipping update.
+[        ] Artifact Instance of 'IosUsbArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'IosUsbArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'IosUsbArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'IosUsbArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'IosUsbArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'IosUsbArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'FontSubsetArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'PubDependencies' is not required, skipping update.
+[        ] executing: [C:\Users\renme\flutter/] git -c log.showSignature=false log HEAD -n 1 --pretty=format:%ad --date=iso
+[  +96 ms] Exit code 0 from: git -c log.showSignature=false log HEAD -n 1 --pretty=format:%ad --date=iso
+[        ] 2026-02-10 10:16:12 -0800
+[  +12 ms] Artifact Instance of 'AndroidGenSnapshotArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'AndroidInternalBuildArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'IOSEngineArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'FlutterWebSdk' is not required, skipping update.
+[        ] Artifact Instance of 'FlutterEngineStamp' is not required, skipping update.
+[        ] Artifact Instance of 'LegacyCanvasKitRemover' is not required, skipping update.
+[   +2 ms] Artifact Instance of 'WindowsEngineArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'MacOSEngineArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'LinuxEngineArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'LinuxFuchsiaSDKArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'MacOSFuchsiaSDKArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'FlutterRunnerSDKArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'FlutterRunnerDebugSymbols' is not required, skipping update.
+[  +48 ms] Artifact Instance of 'MaterialFonts' is not required, skipping update.
+[        ] Artifact Instance of 'GradleWrapper' is not required, skipping update.
+[   +3 ms] Artifact Instance of 'AndroidInternalBuildArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'IOSEngineArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'FlutterWebSdk' is not required, skipping update.
+[        ] Artifact Instance of 'FlutterEngineStamp' is not required, skipping update.
+[        ] Artifact Instance of 'LegacyCanvasKitRemover' is not required, skipping update.
+[        ] Artifact Instance of 'FlutterSdk' is not required, skipping update.
+[        ] Artifact Instance of 'WindowsEngineArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'MacOSEngineArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'LinuxEngineArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'LinuxFuchsiaSDKArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'MacOSFuchsiaSDKArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'FlutterRunnerSDKArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'FlutterRunnerDebugSymbols' is not required, skipping update.
+[        ] Artifact Instance of 'IosUsbArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'IosUsbArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'IosUsbArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'IosUsbArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'IosUsbArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'IosUsbArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'FontSubsetArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'PubDependencies' is not required, skipping update.
+[  +48 ms] Skipping pub get: version match.
+[ +125 ms] Found plugin window_manager at C:\Users\renme\AppData\Local\Pub\Cache\hosted\pub.dev\window_manager-0.3.9\
+[   +5 ms] Found plugin screen_retriever at C:\Users\renme\AppData\Local\Pub\Cache\hosted\pub.dev\screen_retriever-0.1.9\
+[   +1 ms] Found plugin url_launcher at C:\Users\renme\AppData\Local\Pub\Cache\hosted\pub.dev\url_launcher-6.3.2\
+[   +1 ms] Found plugin url_launcher_windows at C:\Users\renme\AppData\Local\Pub\Cache\hosted\pub.dev\url_launcher_windows-3.1.4\
+[   +2 ms] Found plugin url_launcher_web at C:\Users\renme\AppData\Local\Pub\Cache\hosted\pub.dev\url_launcher_web-2.4.1\
+[   +2 ms] Found plugin url_launcher_macos at C:\Users\renme\AppData\Local\Pub\Cache\hosted\pub.dev\url_launcher_macos-3.2.2\
+[   +1 ms] Found plugin url_launcher_linux at C:\Users\renme\AppData\Local\Pub\Cache\hosted\pub.dev\url_launcher_linux-3.2.1\
+[   +1 ms] Found plugin url_launcher_ios at C:\Users\renme\AppData\Local\Pub\Cache\hosted\pub.dev\url_launcher_ios-6.3.3\
+[   +2 ms] Found plugin url_launcher_android at C:\Users\renme\AppData\Local\Pub\Cache\hosted\pub.dev\url_launcher_android-6.3.17\
+[  +19 ms] Found plugin shared_preferences at C:\Users\renme\AppData\Local\Pub\Cache\hosted\pub.dev\shared_preferences-2.5.3\
+[   +1 ms] Found plugin shared_preferences_windows at C:\Users\renme\AppData\Local\Pub\Cache\hosted\pub.dev\shared_preferences_windows-2.4.1\
+[   +2 ms] Found plugin path_provider_windows at C:\Users\renme\AppData\Local\Pub\Cache\hosted\pub.dev\path_provider_windows-2.3.0\
+[   +3 ms] Found plugin shared_preferences_web at C:\Users\renme\AppData\Local\Pub\Cache\hosted\pub.dev\shared_preferences_web-2.4.3\
+[   +2 ms] Found plugin shared_preferences_linux at C:\Users\renme\AppData\Local\Pub\Cache\hosted\pub.dev\shared_preferences_linux-2.4.1\
+[   +1 ms] Found plugin path_provider_linux at C:\Users\renme\AppData\Local\Pub\Cache\hosted\pub.dev\path_provider_linux-2.2.1\
+[   +2 ms] Found plugin shared_preferences_foundation at C:\Users\renme\AppData\Local\Pub\Cache\hosted\pub.dev\shared_preferences_foundation-2.5.4\
+[   +1 ms] Found plugin shared_preferences_android at C:\Users\renme\AppData\Local\Pub\Cache\hosted\pub.dev\shared_preferences_android-2.4.11\
+[   +1 ms] Found plugin path_provider at C:\Users\renme\AppData\Local\Pub\Cache\hosted\pub.dev\path_provider-2.1.5\
+[   +1 ms] Found plugin path_provider_foundation at C:\Users\renme\AppData\Local\Pub\Cache\hosted\pub.dev\path_provider_foundation-2.4.1\
+[   +1 ms] Found plugin path_provider_android at C:\Users\renme\AppData\Local\Pub\Cache\hosted\pub.dev\path_provider_android-2.2.17\
+[   +1 ms] Found plugin app_links at C:\Users\renme\AppData\Local\Pub\Cache\hosted\pub.dev\app_links-6.4.1\
+[   +1 ms] Found plugin app_links_web at C:\Users\renme\AppData\Local\Pub\Cache\hosted\pub.dev\app_links_web-1.0.4\
+[   +2 ms] Found plugin app_links_linux at C:\Users\renme\AppData\Local\Pub\Cache\hosted\pub.dev\app_links_linux-1.0.3\
+[   +1 ms] Found plugin gtk at C:\Users\renme\AppData\Local\Pub\Cache\hosted\pub.dev\gtk-2.1.0\
+[   +1 ms] Found plugin objectbox_flutter_libs at C:\Users\renme\AppData\Local\Pub\Cache\hosted\pub.dev\objectbox_flutter_libs-2.5.1\
+[   +3 ms] Found plugin just_audio_windows at C:\Users\renme\AppData\Local\Pub\Cache\hosted\pub.dev\just_audio_windows-0.2.2\
+[   +1 ms] Found plugin just_audio at C:\Users\renme\AppData\Local\Pub\Cache\hosted\pub.dev\just_audio-0.9.46\
+[   +1 ms] Found plugin just_audio_web at C:\Users\renme\AppData\Local\Pub\Cache\hosted\pub.dev\just_audio_web-0.4.16\
+[   +2 ms] Found plugin audio_session at C:\Users\renme\AppData\Local\Pub\Cache\hosted\pub.dev\audio_session-0.1.25\
+[  +13 ms] Found plugin file_selector at C:\Users\renme\AppData\Local\Pub\Cache\hosted\pub.dev\file_selector-1.1.0\
+[   +1 ms] Found plugin file_selector_windows at C:\Users\renme\AppData\Local\Pub\Cache\hosted\pub.dev\file_selector_windows-0.9.3+5\
+[   +3 ms] Found plugin file_selector_web at C:\Users\renme\AppData\Local\Pub\Cache\hosted\pub.dev\file_selector_web-0.9.4+2\
+[   +1 ms] Found plugin file_selector_macos at C:\Users\renme\AppData\Local\Pub\Cache\hosted\pub.dev\file_selector_macos-0.9.5\
+[   +1 ms] Found plugin file_selector_linux at C:\Users\renme\AppData\Local\Pub\Cache\hosted\pub.dev\file_selector_linux-0.9.4\
+[   +1 ms] Found plugin file_selector_ios at C:\Users\renme\AppData\Local\Pub\Cache\hosted\pub.dev\file_selector_ios-0.5.3+5\
+[   +1 ms] Found plugin file_selector_android at C:\Users\renme\AppData\Local\Pub\Cache\hosted\pub.dev\file_selector_android-0.5.2+4\
+[   +1 ms] Found plugin file_picker at C:\Users\renme\AppData\Local\Pub\Cache\hosted\pub.dev\file_picker-6.2.1\
+[   +2 ms] Found plugin flutter_plugin_android_lifecycle at C:\Users\renme\AppData\Local\Pub\Cache\hosted\pub.dev\flutter_plugin_android_lifecycle-2.0.33\
+[   +3 ms] Found plugin device_info_plus at C:\Users\renme\AppData\Local\Pub\Cache\hosted\pub.dev\device_info_plus-9.1.2\
+[   +2 ms] Found plugin audiotagger at C:\Users\renme\AppData\Local\Pub\Cache\hosted\pub.dev\audiotagger-2.2.1\
+[   +3 ms] Package file_picker:linux references file_picker:linux as the default plugin, but it does not provide an inline implementation.
+           Ask the maintainers of file_picker to either avoid referencing a default implementation via `platforms: linux: default_package: file_picker` or add an inline implementation to file_picker via `platforms: linux:` `pluginClass` or `dartPluginClass`.
+
+[        ] Package file_picker:macos references file_picker:macos as the default plugin, but it does not provide an inline implementation.
+           Ask the maintainers of file_picker to either avoid referencing a default implementation via `platforms: macos: default_package: file_picker` or add an inline implementation to file_picker via `platforms: macos:` `pluginClass` or `dartPluginClass`.
+
+[        ] Package file_picker:windows references file_picker:windows as the default plugin, but it does not provide an inline implementation.
+           Ask the maintainers of file_picker to either avoid referencing a default implementation via `platforms: windows: default_package: file_picker` or add an inline implementation to file_picker via `platforms: windows:` `pluginClass` or `dartPluginClass`.
+
+[  +89 ms] Found plugin window_manager at C:\Users\renme\AppData\Local\Pub\Cache\hosted\pub.dev\window_manager-0.3.9\
+[   +1 ms] Found plugin screen_retriever at C:\Users\renme\AppData\Local\Pub\Cache\hosted\pub.dev\screen_retriever-0.1.9\
+[   +1 ms] Found plugin url_launcher at C:\Users\renme\AppData\Local\Pub\Cache\hosted\pub.dev\url_launcher-6.3.2\
+[   +1 ms] Found plugin url_launcher_windows at C:\Users\renme\AppData\Local\Pub\Cache\hosted\pub.dev\url_launcher_windows-3.1.4\
+[   +3 ms] Found plugin url_launcher_web at C:\Users\renme\AppData\Local\Pub\Cache\hosted\pub.dev\url_launcher_web-2.4.1\
+[   +1 ms] Found plugin url_launcher_macos at C:\Users\renme\AppData\Local\Pub\Cache\hosted\pub.dev\url_launcher_macos-3.2.2\
+[        ] Found plugin url_launcher_linux at C:\Users\renme\AppData\Local\Pub\Cache\hosted\pub.dev\url_launcher_linux-3.2.1\
+[        ] Found plugin url_launcher_ios at C:\Users\renme\AppData\Local\Pub\Cache\hosted\pub.dev\url_launcher_ios-6.3.3\
+[   +1 ms] Found plugin url_launcher_android at C:\Users\renme\AppData\Local\Pub\Cache\hosted\pub.dev\url_launcher_android-6.3.17\
+[  +11 ms] Found plugin shared_preferences at C:\Users\renme\AppData\Local\Pub\Cache\hosted\pub.dev\shared_preferences-2.5.3\
+[        ] Found plugin shared_preferences_windows at C:\Users\renme\AppData\Local\Pub\Cache\hosted\pub.dev\shared_preferences_windows-2.4.1\
+[   +2 ms] Found plugin path_provider_windows at C:\Users\renme\AppData\Local\Pub\Cache\hosted\pub.dev\path_provider_windows-2.3.0\
+[   +2 ms] Found plugin shared_preferences_web at C:\Users\renme\AppData\Local\Pub\Cache\hosted\pub.dev\shared_preferences_web-2.4.3\
+[        ] Found plugin shared_preferences_linux at C:\Users\renme\AppData\Local\Pub\Cache\hosted\pub.dev\shared_preferences_linux-2.4.1\
+[        ] Found plugin path_provider_linux at C:\Users\renme\AppData\Local\Pub\Cache\hosted\pub.dev\path_provider_linux-2.2.1\
+[   +1 ms] Found plugin shared_preferences_foundation at C:\Users\renme\AppData\Local\Pub\Cache\hosted\pub.dev\shared_preferences_foundation-2.5.4\
+[   +1 ms] Found plugin shared_preferences_android at C:\Users\renme\AppData\Local\Pub\Cache\hosted\pub.dev\shared_preferences_android-2.4.11\
+[   +1 ms] Found plugin path_provider at C:\Users\renme\AppData\Local\Pub\Cache\hosted\pub.dev\path_provider-2.1.5\
+[   +1 ms] Found plugin path_provider_foundation at C:\Users\renme\AppData\Local\Pub\Cache\hosted\pub.dev\path_provider_foundation-2.4.1\
+[   +1 ms] Found plugin path_provider_android at C:\Users\renme\AppData\Local\Pub\Cache\hosted\pub.dev\path_provider_android-2.2.17\
+[        ] Found plugin app_links at C:\Users\renme\AppData\Local\Pub\Cache\hosted\pub.dev\app_links-6.4.1\
+[        ] Found plugin app_links_web at C:\Users\renme\AppData\Local\Pub\Cache\hosted\pub.dev\app_links_web-1.0.4\
+[   +1 ms] Found plugin app_links_linux at C:\Users\renme\AppData\Local\Pub\Cache\hosted\pub.dev\app_links_linux-1.0.3\
+[   +1 ms] Found plugin gtk at C:\Users\renme\AppData\Local\Pub\Cache\hosted\pub.dev\gtk-2.1.0\
+[   +1 ms] Found plugin objectbox_flutter_libs at C:\Users\renme\AppData\Local\Pub\Cache\hosted\pub.dev\objectbox_flutter_libs-2.5.1\
+[   +2 ms] Found plugin just_audio_windows at C:\Users\renme\AppData\Local\Pub\Cache\hosted\pub.dev\just_audio_windows-0.2.2\
+[   +1 ms] Found plugin just_audio at C:\Users\renme\AppData\Local\Pub\Cache\hosted\pub.dev\just_audio-0.9.46\
+[   +1 ms] Found plugin just_audio_web at C:\Users\renme\AppData\Local\Pub\Cache\hosted\pub.dev\just_audio_web-0.4.16\
+[   +2 ms] Found plugin audio_session at C:\Users\renme\AppData\Local\Pub\Cache\hosted\pub.dev\audio_session-0.1.25\
+[   +9 ms] Found plugin file_selector at C:\Users\renme\AppData\Local\Pub\Cache\hosted\pub.dev\file_selector-1.1.0\
+[   +1 ms] Found plugin file_selector_windows at C:\Users\renme\AppData\Local\Pub\Cache\hosted\pub.dev\file_selector_windows-0.9.3+5\
+[   +1 ms] Found plugin file_selector_web at C:\Users\renme\AppData\Local\Pub\Cache\hosted\pub.dev\file_selector_web-0.9.4+2\
+[        ] Found plugin file_selector_macos at C:\Users\renme\AppData\Local\Pub\Cache\hosted\pub.dev\file_selector_macos-0.9.5\
+[        ] Found plugin file_selector_linux at C:\Users\renme\AppData\Local\Pub\Cache\hosted\pub.dev\file_selector_linux-0.9.4\
+[        ] Found plugin file_selector_ios at C:\Users\renme\AppData\Local\Pub\Cache\hosted\pub.dev\file_selector_ios-0.5.3+5\
+[   +1 ms] Found plugin file_selector_android at C:\Users\renme\AppData\Local\Pub\Cache\hosted\pub.dev\file_selector_android-0.5.2+4\
+[   +1 ms] Found plugin file_picker at C:\Users\renme\AppData\Local\Pub\Cache\hosted\pub.dev\file_picker-6.2.1\
+[   +1 ms] Found plugin flutter_plugin_android_lifecycle at C:\Users\renme\AppData\Local\Pub\Cache\hosted\pub.dev\flutter_plugin_android_lifecycle-2.0.33\
+[   +1 ms] Found plugin device_info_plus at C:\Users\renme\AppData\Local\Pub\Cache\hosted\pub.dev\device_info_plus-9.1.2\
+[   +3 ms] Found plugin audiotagger at C:\Users\renme\AppData\Local\Pub\Cache\hosted\pub.dev\audiotagger-2.2.1\
+[        ] Package file_picker:linux references file_picker:linux as the default plugin, but it does not provide an inline implementation.
+           Ask the maintainers of file_picker to either avoid referencing a default implementation via `platforms: linux: default_package: file_picker` or add an inline implementation to file_picker via `platforms: linux:` `pluginClass` or `dartPluginClass`.
+
+[        ] Package file_picker:macos references file_picker:macos as the default plugin, but it does not provide an inline implementation.
+           Ask the maintainers of file_picker to either avoid referencing a default implementation via `platforms: macos: default_package: file_picker` or add an inline implementation to file_picker via `platforms: macos:` `pluginClass` or `dartPluginClass`.
+
+[        ] Package file_picker:windows references file_picker:windows as the default plugin, but it does not provide an inline implementation.
+           Ask the maintainers of file_picker to either avoid referencing a default implementation via `platforms: windows: default_package: file_picker` or add an inline implementation to file_picker via `platforms: windows:` `pluginClass` or `dartPluginClass`.
+
+[   +6 ms] Skipping generating web_plugin_registrant.dart because it is up-to-date.
+[  +63 ms] Found plugin window_manager at C:\Users\renme\AppData\Local\Pub\Cache\hosted\pub.dev\window_manager-0.3.9\
+[        ] Found plugin screen_retriever at C:\Users\renme\AppData\Local\Pub\Cache\hosted\pub.dev\screen_retriever-0.1.9\
+[   +1 ms] Found plugin url_launcher at C:\Users\renme\AppData\Local\Pub\Cache\hosted\pub.dev\url_launcher-6.3.2\
+[        ] Found plugin url_launcher_windows at C:\Users\renme\AppData\Local\Pub\Cache\hosted\pub.dev\url_launcher_windows-3.1.4\
+[   +3 ms] Found plugin url_launcher_web at C:\Users\renme\AppData\Local\Pub\Cache\hosted\pub.dev\url_launcher_web-2.4.1\
+[   +1 ms] Found plugin url_launcher_macos at C:\Users\renme\AppData\Local\Pub\Cache\hosted\pub.dev\url_launcher_macos-3.2.2\
+[        ] Found plugin url_launcher_linux at C:\Users\renme\AppData\Local\Pub\Cache\hosted\pub.dev\url_launcher_linux-3.2.1\
+[        ] Found plugin url_launcher_ios at C:\Users\renme\AppData\Local\Pub\Cache\hosted\pub.dev\url_launcher_ios-6.3.3\
+[        ] Found plugin url_launcher_android at C:\Users\renme\AppData\Local\Pub\Cache\hosted\pub.dev\url_launcher_android-6.3.17\
+[  +11 ms] Found plugin shared_preferences at C:\Users\renme\AppData\Local\Pub\Cache\hosted\pub.dev\shared_preferences-2.5.3\
+[   +1 ms] Found plugin shared_preferences_windows at C:\Users\renme\AppData\Local\Pub\Cache\hosted\pub.dev\shared_preferences_windows-2.4.1\
+[   +1 ms] Found plugin path_provider_windows at C:\Users\renme\AppData\Local\Pub\Cache\hosted\pub.dev\path_provider_windows-2.3.0\
+[   +2 ms] Found plugin shared_preferences_web at C:\Users\renme\AppData\Local\Pub\Cache\hosted\pub.dev\shared_preferences_web-2.4.3\
+[        ] Found plugin shared_preferences_linux at C:\Users\renme\AppData\Local\Pub\Cache\hosted\pub.dev\shared_preferences_linux-2.4.1\
+[        ] Found plugin path_provider_linux at C:\Users\renme\AppData\Local\Pub\Cache\hosted\pub.dev\path_provider_linux-2.2.1\
+[   +1 ms] Found plugin shared_preferences_foundation at C:\Users\renme\AppData\Local\Pub\Cache\hosted\pub.dev\shared_preferences_foundation-2.5.4\
+[        ] Found plugin shared_preferences_android at C:\Users\renme\AppData\Local\Pub\Cache\hosted\pub.dev\shared_preferences_android-2.4.11\
+[   +1 ms] Found plugin path_provider at C:\Users\renme\AppData\Local\Pub\Cache\hosted\pub.dev\path_provider-2.1.5\
+[        ] Found plugin path_provider_foundation at C:\Users\renme\AppData\Local\Pub\Cache\hosted\pub.dev\path_provider_foundation-2.4.1\
+[   +1 ms] Found plugin path_provider_android at C:\Users\renme\AppData\Local\Pub\Cache\hosted\pub.dev\path_provider_android-2.2.17\
+[   +1 ms] Found plugin app_links at C:\Users\renme\AppData\Local\Pub\Cache\hosted\pub.dev\app_links-6.4.1\
+[        ] Found plugin app_links_web at C:\Users\renme\AppData\Local\Pub\Cache\hosted\pub.dev\app_links_web-1.0.4\
+[   +1 ms] Found plugin app_links_linux at C:\Users\renme\AppData\Local\Pub\Cache\hosted\pub.dev\app_links_linux-1.0.3\
+[   +1 ms] Found plugin gtk at C:\Users\renme\AppData\Local\Pub\Cache\hosted\pub.dev\gtk-2.1.0\
+[   +2 ms] Found plugin objectbox_flutter_libs at C:\Users\renme\AppData\Local\Pub\Cache\hosted\pub.dev\objectbox_flutter_libs-2.5.1\
+[   +2 ms] Found plugin just_audio_windows at C:\Users\renme\AppData\Local\Pub\Cache\hosted\pub.dev\just_audio_windows-0.2.2\
+[        ] Found plugin just_audio at C:\Users\renme\AppData\Local\Pub\Cache\hosted\pub.dev\just_audio-0.9.46\
+[        ] Found plugin just_audio_web at C:\Users\renme\AppData\Local\Pub\Cache\hosted\pub.dev\just_audio_web-0.4.16\
+[   +2 ms] Found plugin audio_session at C:\Users\renme\AppData\Local\Pub\Cache\hosted\pub.dev\audio_session-0.1.25\
+[   +9 ms] Found plugin file_selector at C:\Users\renme\AppData\Local\Pub\Cache\hosted\pub.dev\file_selector-1.1.0\
+[        ] Found plugin file_selector_windows at C:\Users\renme\AppData\Local\Pub\Cache\hosted\pub.dev\file_selector_windows-0.9.3+5\
+[   +2 ms] Found plugin file_selector_web at C:\Users\renme\AppData\Local\Pub\Cache\hosted\pub.dev\file_selector_web-0.9.4+2\
+[        ] Found plugin file_selector_macos at C:\Users\renme\AppData\Local\Pub\Cache\hosted\pub.dev\file_selector_macos-0.9.5\
+[        ] Found plugin file_selector_linux at C:\Users\renme\AppData\Local\Pub\Cache\hosted\pub.dev\file_selector_linux-0.9.4\
+[        ] Found plugin file_selector_ios at C:\Users\renme\AppData\Local\Pub\Cache\hosted\pub.dev\file_selector_ios-0.5.3+5\
+[        ] Found plugin file_selector_android at C:\Users\renme\AppData\Local\Pub\Cache\hosted\pub.dev\file_selector_android-0.5.2+4\
+[        ] Found plugin file_picker at C:\Users\renme\AppData\Local\Pub\Cache\hosted\pub.dev\file_picker-6.2.1\
+[   +1 ms] Found plugin flutter_plugin_android_lifecycle at C:\Users\renme\AppData\Local\Pub\Cache\hosted\pub.dev\flutter_plugin_android_lifecycle-2.0.33\
+[   +1 ms] Found plugin device_info_plus at C:\Users\renme\AppData\Local\Pub\Cache\hosted\pub.dev\device_info_plus-9.1.2\
+[   +1 ms] Found plugin audiotagger at C:\Users\renme\AppData\Local\Pub\Cache\hosted\pub.dev\audiotagger-2.2.1\
+[        ] Package file_picker:linux references file_picker:linux as the default plugin, but it does not provide an inline implementation.
+           Ask the maintainers of file_picker to either avoid referencing a default implementation via `platforms: linux: default_package: file_picker` or add an inline implementation to file_picker via `platforms: linux:` `pluginClass` or `dartPluginClass`.
+
+[        ] Package file_picker:macos references file_picker:macos as the default plugin, but it does not provide an inline implementation.
+           Ask the maintainers of file_picker to either avoid referencing a default implementation via `platforms: macos: default_package: file_picker` or add an inline implementation to file_picker via `platforms: macos:` `pluginClass` or `dartPluginClass`.
+
+[        ] Package file_picker:windows references file_picker:windows as the default plugin, but it does not provide an inline implementation.
+           Ask the maintainers of file_picker to either avoid referencing a default implementation via `platforms: windows: default_package: file_picker` or add an inline implementation to file_picker via `platforms: windows:` `pluginClass` or `dartPluginClass`.
+
+[   +5 ms] Generating D:\projects\Renaissance\renaissance\android\app\src\main\java\io\flutter\plugins\GeneratedPluginRegistrant.java
+[   +1 ms] Skipping generating GeneratedPluginRegistrant.java because it is up-to-date.
+[   +5 ms] Skipping generating generated_plugin_registrant.h because it is up-to-date.
+[   +1 ms] Skipping generating generated_plugin_registrant.cc because it is up-to-date.
+[   +1 ms] Skipping generating generated_plugins.cmake because it is up-to-date.
+[        ] Package file_picker:linux references file_picker:linux as the default plugin, but it does not provide an inline implementation.
+           Ask the maintainers of file_picker to either avoid referencing a default implementation via `platforms: linux: default_package: file_picker` or add an inline implementation to file_picker via `platforms: linux:` `pluginClass` or `dartPluginClass`.
+
+[        ] Package file_picker:macos references file_picker:macos as the default plugin, but it does not provide an inline implementation.
+           Ask the maintainers of file_picker to either avoid referencing a default implementation via `platforms: macos: default_package: file_picker` or add an inline implementation to file_picker via `platforms: macos:` `pluginClass` or `dartPluginClass`.
+
+[        ] Package file_picker:windows references file_picker:windows as the default plugin, but it does not provide an inline implementation.
+           Ask the maintainers of file_picker to either avoid referencing a default implementation via `platforms: windows: default_package: file_picker` or add an inline implementation to file_picker via `platforms: windows:` `pluginClass` or `dartPluginClass`.
+
+[   +1 ms] Skipping generating GeneratedPluginRegistrant.h because it is up-to-date.
+[   +1 ms] Skipping generating GeneratedPluginRegistrant.m because it is up-to-date.
+[  +77 ms] executing: C:\Program Files\Android\Android Studio\jbr\bin\java -version
+[ +195 ms] Exit code 0 from: C:\Program Files\Android\Android Studio\jbr\bin\java -version
+[        ] openjdk version "21.0.9" 2025-10-21
+           OpenJDK Runtime Environment (build 21.0.9+-14649483-b1163.86)
+           OpenJDK 64-Bit Server VM (build 21.0.9+-14649483-b1163.86, mixed mode)
+[   +5 ms] Top-level Gradle build file not found, skipping migration of task "clean".
+[   +1 ms] executing: C:\Program Files\Android\Android Studio\jbr\bin\java --version
+[+1147 ms] Exit code 0 from: C:\Program Files\Android\Android Studio\jbr\bin\java --version
+[        ] openjdk 21.0.9 2025-10-21
+           OpenJDK Runtime Environment (build 21.0.9+-14649483-b1163.86)
+           OpenJDK 64-Bit Server VM (build 21.0.9+-14649483-b1163.86, mixed mode)
+[   +1 ms] Version of Java is different than impacted version, no migration attempted.
+[   +3 ms] CMake project not found, skipping support Android 15 16k page size migration.
+[   +4 ms] Using gradle from D:\projects\Renaissance\renaissance\android\gradlew.bat.
+[   +7 ms] LocalFile: 'D:\projects\Renaissance\renaissance\android\build.gradle.kts' doesn't provide an AGP version. Checking settings.
+[        ] LocalFile: 'D:\projects\Renaissance\renaissance\android\settings.gradle.kts' provides AGP version: 8.11.1
+[  +31 ms] Running Gradle task 'assembleRelease'...
+[        ] executing: [D:\projects\Renaissance\renaissance\android/] D:\projects\Renaissance\renaissance\android\gradlew.bat --full-stacktrace --info -Pverbose=true -Ptarget-platform=android-arm,android-arm64,android-x64 -Ptarget=lib\main.dart -Pbase-application-name=android.app.Application -Pdart-defines=RkxVVFRFUl9WRVJTSU9OPTMuNDEuMA==,RkxVVFRFUl9DSEFOTkVMPXN0YWJsZQ==,RkxVVFRFUl9HSVRfVVJMPWh0dHBzOi8vZ2l0aHViLmNvbS9mbHV0dGVyL2ZsdXR0ZXIuZ2l0,RkxVVFRFUl9GUkFNRVdPUktfUkVWSVNJT049NDRhNjI2ZjRmMA==,RkxVVFRFUl9FTkdJTkVfUkVWSVNJT049MzQ1MmQ3MzViZA==,RkxVVFRFUl9EQVJUX1ZFUlNJT049My4xMS4w -Pdart-obfuscation=false -Ptrack-widget-creation=true -Ptree-shake-icons=true assembleRelease
+[+120319 ms] Exception in thread "main" java.lang.RuntimeException: Timeout of 120000 reached waiting for exclusive access to file: C:\Users\renme\.gradle\wrapper\dists\gradle-8.14-all\c2qonpi39x1mddn7hk5gh9iqj\gradle-8.14-all.zip
+[        ] 	at org.gradle.wrapper.ExclusiveFileAccessManager.access(ExclusiveFileAccessManager.java:61)
+[        ] 	at org.gradle.wrapper.Install.createDist(Install.java:48)
+[        ] 	at org.gradle.wrapper.WrapperExecutor.execute(WrapperExecutor.java:128)
+[        ] 	at org.gradle.wrapper.GradleWrapperMain.main(GradleWrapperMain.java:61)
+[  +26 ms] Running Gradle task 'assembleRelease'... (completed in 120.3s)
+[  +22 ms] [!] Gradle threw an error while downloading artifacts from the network.
+[        ] Retrying Gradle Build: #1, wait time: 100ms
+[ +103 ms] LocalFile: 'D:\projects\Renaissance\renaissance\android\build.gradle.kts' doesn't provide an AGP version. Checking settings.
+[        ] LocalFile: 'D:\projects\Renaissance\renaissance\android\settings.gradle.kts' provides AGP version: 8.11.1
+[  +22 ms] Running Gradle task 'assembleRelease'...
+[        ] executing: [D:\projects\Renaissance\renaissance\android/] D:\projects\Renaissance\renaissance\android\gradlew.bat --full-stacktrace --info -Pverbose=true -Ptarget-platform=android-arm,android-arm64,android-x64 -Ptarget=lib\main.dart -Pbase-application-name=android.app.Application -Pdart-defines=RkxVVFRFUl9WRVJTSU9OPTMuNDEuMA==,RkxVVFRFUl9DSEFOTkVMPXN0YWJsZQ==,RkxVVFRFUl9HSVRfVVJMPWh0dHBzOi8vZ2l0aHViLmNvbS9mbHV0dGVyL2ZsdXR0ZXIuZ2l0,RkxVVFRFUl9GUkFNRVdPUktfUkVWSVNJT049NDRhNjI2ZjRmMA==,RkxVVFRFUl9FTkdJTkVfUkVWSVNJT049MzQ1MmQ3MzViZA==,RkxVVFRFUl9EQVJUX1ZFUlNJT049My4xMS4w -Pdart-obfuscation=false -Ptrack-widget-creation=true -Ptree-shake-icons=true assembleRelease
+[+120448 ms] Exception in thread "main" java.lang.RuntimeException: Timeout of 120000 reached waiting for exclusive access to file: C:\Users\renme\.gradle\wrapper\dists\gradle-8.14-all\c2qonpi39x1mddn7hk5gh9iqj\gradle-8.14-all.zip
+[        ] 	at org.gradle.wrapper.ExclusiveFileAccessManager.access(ExclusiveFileAccessManager.java:61)
+[        ] 	at org.gradle.wrapper.Install.createDist(Install.java:48)
+[        ] 	at org.gradle.wrapper.WrapperExecutor.execute(WrapperExecutor.java:128)
+[        ] 	at org.gradle.wrapper.GradleWrapperMain.main(GradleWrapperMain.java:61)
+[  +26 ms] Running Gradle task 'assembleRelease'... (completed in 120.5s)
+[  +15 ms] [!] Gradle threw an error while downloading artifacts from the network.
+[  +38 ms] "flutter apk" took 243,153ms.
+[  +78 ms] Gradle task assembleRelease failed with exit code 1
+[        ] 
+           #0      throwToolExit (package:flutter_tools/src/base/common.dart:34:3)
+           #1      AndroidGradleBuilder.buildGradleApp (package:flutter_tools/src/android/gradle.dart:592:7)
+           <asynchronous suspension>
+           #2      AndroidGradleBuilder.buildApk (package:flutter_tools/src/android/gradle.dart:234:5)
+           <asynchronous suspension>
+           #3      BuildApkCommand.runCommand (package:flutter_tools/src/commands/build_apk.dart:131:5)
+           <asynchronous suspension>
+           #4      FlutterCommand.run.<anonymous closure> (package:flutter_tools/src/runner/flutter_command.dart:1590:27)
+           <asynchronous suspension>
+           #5      AppContext.run.<anonymous closure> (package:flutter_tools/src/base/context.dart:154:19)
+           <asynchronous suspension>
+           #6      CommandRunner.runCommand (package:args/command_runner.dart:212:13)
+           <asynchronous suspension>
+           #7      FlutterCommandRunner.runCommand.<anonymous closure> (package:flutter_tools/src/runner/flutter_command_runner.dart:496:9)
+           <asynchronous suspension>
+           #8      AppContext.run.<anonymous closure> (package:flutter_tools/src/base/context.dart:154:19)
+           <asynchronous suspension>
+           #9      FlutterCommandRunner.runCommand (package:flutter_tools/src/runner/flutter_command_runner.dart:431:5)
+           <asynchronous suspension>
+           #10     FlutterCommandRunner.run.<anonymous closure> (package:flutter_tools/src/runner/flutter_command_runner.dart:307:33)
+           <asynchronous suspension>
+           #11     run.<anonymous closure>.<anonymous closure> (package:flutter_tools/runner.dart:104:11)
+           <asynchronous suspension>
+           #12     AppContext.run.<anonymous closure> (package:flutter_tools/src/base/context.dart:154:19)
+           <asynchronous suspension>
+           #13     main (package:flutter_tools/executable.dart:103:3)
+           <asynchronous suspension>
+
+
+[        ] Running 1 shutdown hook
+[   +1 ms] Shutdown hooks complete
+[ +199 ms] exiting with code 1

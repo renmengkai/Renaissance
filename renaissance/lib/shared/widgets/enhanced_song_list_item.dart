@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:fluent_ui/fluent_ui.dart';
+import 'package:flutter/material.dart' show Image;
 import 'package:flutter_animate/flutter_animate.dart';
 import '../../core/theme/app_theme.dart';
 import '../../features/player/models/song.dart';
@@ -165,6 +166,12 @@ class _EnhancedSongListItemState extends State<EnhancedSongListItem>
       final path = widget.coverPath!;
       if (path.startsWith('http')) {
         return Image.network(
+          path,
+          fit: BoxFit.cover,
+          errorBuilder: (_, __, ___) => _buildDefaultCover(),
+        );
+      } else if (path.startsWith('assets/')) {
+        return Image.asset(
           path,
           fit: BoxFit.cover,
           errorBuilder: (_, __, ___) => _buildDefaultCover(),

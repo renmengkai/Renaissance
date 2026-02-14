@@ -84,14 +84,22 @@ class WebDAVMusicService {
     }
   }
 
-  Future<List<Song>> scanSongs() async {
+  Future<List<Song>> scanSongs({int page = 0, int pageSize = 20}) async {
     final List<Song> songs = [];
     final webdavPath = source.webdavPath ?? '/';
 
     final files = await listFiles(webdavPath);
 
-    for (int i = 0; i < files.length; i++) {
-      final fileUrl = files[i];
+    // 分页处理
+    final startIndex = page * pageSize;
+    if (startIndex >= files.length) {
+      return [];
+    }
+    final endIndex = (startIndex + pageSize).clamp(0, files.length);
+    final paginatedFiles = files.sublist(startIndex, endIndex);
+
+    for (int i = 0; i < paginatedFiles.length; i++) {
+      final fileUrl = paginatedFiles[i];
       final fileName = Uri.parse(fileUrl).pathSegments.last;
       final title = fileName.substring(0, fileName.lastIndexOf('.'));
 

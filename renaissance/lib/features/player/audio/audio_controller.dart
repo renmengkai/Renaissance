@@ -174,16 +174,20 @@ class AudioController extends StateNotifier<AudioPlaybackStatus> {
       final finalDuration = loadedDuration ?? _audioPlayer.duration;
 
       _isLoading = false;
+      if (!loadSuccess) {
+        // 使用自动清除错误信息的方法
+        setErrorWithAutoClear('音频加载失败', duration: const Duration(seconds: 5));
+      }
       state = state.copyWith(
         isLoading: false,
         duration: finalDuration ?? song.duration,
-        errorMessage: loadSuccess ? null : '音频加载失败',
       );
     } catch (e, stackTrace) {
       _isLoading = false;
+      // 使用自动清除错误信息的方法
+      setErrorWithAutoClear('播放错误: $e', duration: const Duration(seconds: 5));
       state = state.copyWith(
         isLoading: false,
-        errorMessage: '播放错误: $e',
         isPlaying: false,
         position: Duration.zero,
         progress: 0.0,
@@ -263,6 +267,22 @@ class AudioController extends StateNotifier<AudioPlaybackStatus> {
 
   void resetCompletion() {
     state = state.copyWith(isCompleted: false);
+  }
+
+  /// 清除错误信息
+  void clearError() {
+    if (state.errorMessage != null) {
+      state = state.copyWith(errorMessage: null);
+    }
+  }
+
+  /// 设置错误信息并在指定时间后自动清除
+  void setErrorWithAutoClear(String errorMessage, {Duration duration = const Duration(seconds: 5)}) {
+    state = state.copyWith(errorMessage: errorMessage);
+    // 延迟自动清除错误信息
+    Future.delayed(duration, () {
+      clearError();
+    });
   }
 
   @override

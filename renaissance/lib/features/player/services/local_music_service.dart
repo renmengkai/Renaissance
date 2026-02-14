@@ -5,9 +5,6 @@ import 'package:path/path.dart' as path;
 import 'package:file_selector/file_selector.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:audiotagger/audiotagger.dart';
-import 'package:audiotagger/models/tag.dart';
-import 'package:audiotagger/models/audiofile.dart';
 import '../models/song.dart';
 import '../models/playlist.dart';
 import 'cover_art_service.dart';
@@ -26,7 +23,6 @@ class LocalMusicService {
 
   static const String _musicDirectoryKey = 'music_directory_path';
   static const String _selectedFilesKey = 'selected_files_paths';
-  static final _tagger = Audiotagger();
 
   /// 获取保存的音乐文件夹路径
   static Future<String?> getSavedMusicDirectory() async {
@@ -220,39 +216,25 @@ class LocalMusicService {
     int year = DateTime.now().year;
     Duration duration = const Duration(minutes: 3, seconds: 30);
 
+    // 尝试从文件名解析艺术家和标题 (格式: "艺术家 - 标题")
     final parts = fileName.split(' - ');
     if (parts.length >= 2) {
       artist = parts[0].trim();
       title = parts[1].trim();
     }
 
-    if (Platform.isAndroid) {
-      try {
-        final tag = await _tagger.readTags(
-          path: filePath,
-        );
-
-        if (tag != null) {
-          if (tag.title != null && tag.title!.isNotEmpty) {
-            title = tag.title!;
-          }
-          if (tag.artist != null && tag.artist!.isNotEmpty) {
-            artist = tag.artist!;
-          }
-          if (tag.album != null && tag.album!.isNotEmpty) {
-            album = tag.album!;
-          }
-          if (tag.year != null && tag.year!.isNotEmpty) {
-            year = int.tryParse(tag.year!) ?? year;
-          }
-        }
-
-        final audioFile = await _tagger.readAudioFile(path: filePath);
-        if (audioFile != null && audioFile.length != null) {
-          duration = Duration(milliseconds: audioFile.length!);
-        }
-      } catch (e) {
+    // 获取文件信息来估算时长
+    try {
+      final file = File(filePath);
+      final stat = await file.stat();
+      if (stat.size > 0) {
+        // 粗略估算: 假设平均比特率为 128kbps
+        // 时长(秒) = 文件大小(字节) * 8 / 比特率(bps)
+        final estimatedSeconds = (stat.size * 8) / (128 * 1024);
+        duration = Duration(seconds: estimatedSeconds.toInt());
       }
+    } catch (e) {
+      // 使用默认时长
     }
 
     final colors = [
@@ -268,8 +250,6 @@ class LocalMusicService {
     final color = colors[index % colors.length];
 
     final uniqueId = 'local_file_${filePath.hashCode}';
-
-
 
     return Song(
       id: uniqueId,

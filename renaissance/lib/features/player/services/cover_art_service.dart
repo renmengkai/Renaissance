@@ -6,9 +6,45 @@ import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as path;
 import 'package:image/image.dart' as img;
-import 'package:audiotagger/audiotagger.dart';
-import 'package:audiotagger/models/tag.dart';
+import '../../../core/services/storage_service.dart';
 import '../models/song.dart';
+
+/// 封面缓存元数据
+class CoverCacheMetadata {
+  final String songId;
+  final String artist;
+  final String title;
+  final String cachePath;
+  final DateTime cachedAt;
+  final String source; // 封面来源: 'embedded', 'itunes', 'deezer', 'spotify', 'musicbrainz', 'lastfm', 'default'
+
+  CoverCacheMetadata({
+    required this.songId,
+    required this.artist,
+    required this.title,
+    required this.cachePath,
+    required this.cachedAt,
+    required this.source,
+  });
+
+  Map<String, dynamic> toJson() => {
+    'songId': songId,
+    'artist': artist,
+    'title': title,
+    'cachePath': cachePath,
+    'cachedAt': cachedAt.toIso8601String(),
+    'source': source,
+  };
+
+  factory CoverCacheMetadata.fromJson(Map<String, dynamic> json) => CoverCacheMetadata(
+    songId: json['songId'],
+    artist: json['artist'],
+    title: json['title'],
+    cachePath: json['cachePath'],
+    cachedAt: DateTime.parse(json['cachedAt']),
+    source: json['source'],
+  );
+}
 
 /// 封面获取服务
 /// 负责从多个来源获取歌曲封面图片
@@ -17,11 +53,45 @@ class CoverArtService {
   factory CoverArtService() => _instance;
   CoverArtService._internal();
 
-  final _tagger = Audiotagger();
-
   Directory? _cacheDir;
 
   final Map<String, String> _memoryCache = {};
+
+  // 缓存元数据持久化存储键
+  static const String _cacheMetadataKey = 'cover_cache_metadata';
+
+  // 正在进行的封面加载任务
+  final Map<String, Future<String?>> _pendingLoads = {};
+
+  // 封面加载控制
+  bool _isPaused = false;
+  final List<Song> _pendingSongs = [];
+
+  // 暂停封面加载（音乐播放时调用）
+  void pauseLoading() {
+    _isPaused = true;
+    debugPrint('[CoverArtService] Cover loading paused');
+  }
+
+  // 恢复封面加载（音乐缓存足够时调用）
+  void resumeLoading() {
+    if (!_isPaused) return;
+    _isPaused = false;
+    debugPrint('[CoverArtService] Cover loading resumed, pending: ${_pendingSongs.length}');
+
+    // 处理等待中的歌曲
+    final songsToLoad = List<Song>.from(_pendingSongs);
+    _pendingSongs.clear();
+
+    // 延迟加载等待中的歌曲
+    if (songsToLoad.isNotEmpty) {
+      Future.delayed(const Duration(milliseconds: 500), () {
+        for (final song in songsToLoad) {
+          _loadCloudSongCoverAsync(song, _generateCacheFileName(song));
+        }
+      });
+    }
+  }
 
   Future<void> _initCacheDir() async {
     if (_cacheDir != null) return;
@@ -34,6 +104,31 @@ class CoverArtService {
     }
   }
 
+  /// 获取缓存元数据
+  Future<Map<String, CoverCacheMetadata>> _loadCacheMetadata() async {
+    try {
+      final jsonStr = StorageService.getString(_cacheMetadataKey);
+      if (jsonStr != null) {
+        final Map<String, dynamic> data = json.decode(jsonStr);
+        return data.map((key, value) =>
+            MapEntry(key, CoverCacheMetadata.fromJson(value)));
+      }
+    } catch (e) {
+      debugPrint('[CoverArtService] Error loading cache metadata: $e');
+    }
+    return {};
+  }
+
+  /// 保存缓存元数据
+  Future<void> _saveCacheMetadata(Map<String, CoverCacheMetadata> metadata) async {
+    try {
+      final data = metadata.map((key, value) => MapEntry(key, value.toJson()));
+      await StorageService.setString(_cacheMetadataKey, json.encode(data));
+    } catch (e) {
+      debugPrint('[CoverArtService] Error saving cache metadata: $e');
+    }
+  }
+
   /// 获取歌曲封面
   /// 优先级：1.内存缓存 2.磁盘缓存 3.音频文件内嵌封面 4.在线搜索 5.默认封面
   Future<String> getCoverArt(Song song) async {
@@ -41,26 +136,42 @@ class CoverArtService {
 
     final cacheKey = _generateCacheFileName(song);
 
+    // 1. 检查内存缓存
     if (_memoryCache.containsKey(cacheKey)) {
       return _memoryCache[cacheKey]!;
     }
 
-    final cacheFileName = cacheKey;
-    final cachePath = path.join(_cacheDir!.path, cacheFileName);
+    final cachePath = path.join(_cacheDir!.path, cacheKey);
 
+    // 2. 检查磁盘缓存
     if (await File(cachePath).exists()) {
       _memoryCache[cacheKey] = cachePath;
       return cachePath;
     }
 
-    // 云存储歌曲直接使用默认封面，避免耗时的在线搜索
+    // 3. 检查缓存元数据（用于云存储歌曲）
+    final metadata = await _loadCacheMetadata();
+    if (metadata.containsKey(cacheKey)) {
+      final meta = metadata[cacheKey]!;
+      if (await File(meta.cachePath).exists()) {
+        _memoryCache[cacheKey] = meta.cachePath;
+        return meta.cachePath;
+      }
+    }
+
+    // 云存储歌曲使用异步加载策略
     if (song.audioUrl.startsWith('http://') || song.audioUrl.startsWith('https://')) {
+      // 立即返回默认封面，同时在后台加载真实封面
       final defaultCover = _getDefaultCoverPath(song);
       _memoryCache[cacheKey] = defaultCover;
+
+      // 异步加载真实封面（如果不在加载中）
+      _loadCloudSongCoverAsync(song, cacheKey);
+
       return defaultCover;
     }
 
-    // 1. 尝试从音频文件提取封面
+    // 本地歌曲：尝试提取内嵌封面
     final embeddedCover = await _extractEmbeddedCover(song.audioUrl);
     if (embeddedCover != null) {
       await _saveCoverToCache(embeddedCover, cachePath);
@@ -68,7 +179,7 @@ class CoverArtService {
       return cachePath;
     }
 
-    // 2. 尝试在线搜索封面
+    // 本地歌曲：尝试在线搜索
     final onlineCover = await _searchOnlineCover(song);
     if (onlineCover != null) {
       await _saveCoverToCache(onlineCover, cachePath);
@@ -81,6 +192,76 @@ class CoverArtService {
     return defaultCover;
   }
 
+  // 封面加载完成回调
+  void Function(Song song, String coverPath)? onCoverLoaded;
+
+  /// 异步加载云存储歌曲封面
+  Future<void> _loadCloudSongCoverAsync(Song song, String cacheKey) async {
+    // 如果暂停了，将歌曲加入等待队列
+    if (_isPaused) {
+      if (!_pendingSongs.any((s) => s.id == song.id)) {
+        _pendingSongs.add(song);
+        debugPrint('[CoverArtService] Loading paused, added ${song.title} to pending queue');
+      }
+      return;
+    }
+
+    // 避免重复加载
+    if (_pendingLoads.containsKey(cacheKey)) {
+      return;
+    }
+
+    final loadFuture = _loadCloudSongCoverInternal(song, cacheKey);
+    _pendingLoads[cacheKey] = loadFuture;
+
+    try {
+      final result = await loadFuture;
+      if (result != null) {
+        debugPrint('[CoverArtService] Async loaded cover for ${song.title} from $result');
+        // 通知回调封面已加载
+        if (onCoverLoaded != null) {
+          final coverPath = _memoryCache[cacheKey];
+          if (coverPath != null && !coverPath.startsWith('assets/')) {
+            onCoverLoaded!(song, coverPath);
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint('[CoverArtService] Error async loading cover for ${song.title}: $e');
+    } finally {
+      _pendingLoads.remove(cacheKey);
+    }
+  }
+
+  /// 内部方法：加载云存储歌曲封面
+  Future<String?> _loadCloudSongCoverInternal(Song song, String cacheKey) async {
+    try {
+      final onlineCover = await _searchOnlineCover(song);
+      if (onlineCover != null) {
+        final cachePath = path.join(_cacheDir!.path, cacheKey);
+        await _saveCoverToCache(onlineCover, cachePath);
+        _memoryCache[cacheKey] = cachePath;
+
+        // 更新缓存元数据
+        final metadata = await _loadCacheMetadata();
+        metadata[cacheKey] = CoverCacheMetadata(
+          songId: song.id,
+          artist: song.artist,
+          title: song.title,
+          cachePath: cachePath,
+          cachedAt: DateTime.now(),
+          source: 'online',
+        );
+        await _saveCacheMetadata(metadata);
+
+        return 'online';
+      }
+    } catch (e) {
+      debugPrint('[CoverArtService] Error loading cloud song cover: $e');
+    }
+    return null;
+  }
+
   /// 预加载多个歌曲的封面
   Future<void> preloadCovers(List<Song> songs) async {
     await _initCacheDir();
@@ -90,20 +271,34 @@ class CoverArtService {
 
     int cloudSongCount = 0;
     int localSongCount = 0;
+    int cachedCount = 0;
 
+    // 先加载所有本地歌曲封面
     for (final song in songs) {
       final cacheKey = _generateCacheFileName(song);
-      if (_memoryCache.containsKey(cacheKey)) continue;
 
-      final cacheFileName = cacheKey;
-      final cachePath = path.join(_cacheDir!.path, cacheFileName);
-
-      if (await File(cachePath).exists()) {
-        _memoryCache[cacheKey] = cachePath;
+      // 跳过已缓存的
+      if (_memoryCache.containsKey(cacheKey)) {
+        cachedCount++;
         continue;
       }
 
-      // 云存储歌曲跳过在线搜索，直接使用默认封面
+      final cachePath = path.join(_cacheDir!.path, cacheKey);
+      if (await File(cachePath).exists()) {
+        _memoryCache[cacheKey] = cachePath;
+        cachedCount++;
+        continue;
+      }
+
+      // 检查缓存元数据
+      final metadata = await _loadCacheMetadata();
+      if (metadata.containsKey(cacheKey) && await File(metadata[cacheKey]!.cachePath).exists()) {
+        _memoryCache[cacheKey] = metadata[cacheKey]!.cachePath;
+        cachedCount++;
+        continue;
+      }
+
+      // 云存储歌曲：只使用默认封面，不阻塞预加载
       if (song.audioUrl.startsWith('http://') || song.audioUrl.startsWith('https://')) {
         cloudSongCount++;
         final defaultCover = _getDefaultCoverPath(song);
@@ -113,6 +308,7 @@ class CoverArtService {
 
       localSongCount++;
 
+      // 本地歌曲：尝试提取内嵌封面
       final embeddedCover = await _extractEmbeddedCover(song.audioUrl);
       if (embeddedCover != null) {
         await _saveCoverToCache(embeddedCover, cachePath);
@@ -120,11 +316,14 @@ class CoverArtService {
         continue;
       }
 
-      final onlineCover = await _searchOnlineCover(song);
-      if (onlineCover != null) {
-        await _saveCoverToCache(onlineCover, cachePath);
-        _memoryCache[cacheKey] = cachePath;
-        continue;
+      // 本地歌曲：尝试在线搜索（限制数量避免太慢）
+      if (localSongCount <= 10) { // 只预加载前10首本地歌曲的在线封面
+        final onlineCover = await _searchOnlineCover(song);
+        if (onlineCover != null) {
+          await _saveCoverToCache(onlineCover, cachePath);
+          _memoryCache[cacheKey] = cachePath;
+          continue;
+        }
       }
 
       final defaultCover = _getDefaultCoverPath(song);
@@ -133,13 +332,184 @@ class CoverArtService {
 
     stopwatch.stop();
     debugPrint('[CoverArtService] Preload completed in ${stopwatch.elapsedMilliseconds}ms, '
-        'cloud songs: $cloudSongCount, local songs: $localSongCount');
+        'cloud songs: $cloudSongCount, local songs: $localSongCount, cached: $cachedCount');
+
+    // 异步加载云存储歌曲封面（不阻塞）
+    _preloadCloudSongsAsync(songs);
+  }
+
+  /// 异步预加载云存储歌曲封面
+  Future<void> _preloadCloudSongsAsync(List<Song> songs) async {
+    final cloudSongs = songs.where((s) =>
+        s.audioUrl.startsWith('http://') || s.audioUrl.startsWith('https://')).toList();
+
+    if (cloudSongs.isEmpty) return;
+
+    debugPrint('[CoverArtService] Starting async preload for ${cloudSongs.length} cloud songs');
+    final stopwatch = Stopwatch()..start();
+
+    int loadedCount = 0;
+    int failedCount = 0;
+
+    // 分批处理，每批5首，避免同时发起太多请求
+    const batchSize = 5;
+    for (int i = 0; i < cloudSongs.length; i += batchSize) {
+      final batch = cloudSongs.skip(i).take(batchSize).toList();
+      final futures = batch.map((song) async {
+        final cacheKey = _generateCacheFileName(song);
+
+        // 检查是否已经有缓存
+        final cachePath = path.join(_cacheDir!.path, cacheKey);
+        if (await File(cachePath).exists()) {
+          _memoryCache[cacheKey] = cachePath;
+          return true;
+        }
+
+        // 检查缓存元数据
+        final metadata = await _loadCacheMetadata();
+        if (metadata.containsKey(cacheKey) && await File(metadata[cacheKey]!.cachePath).exists()) {
+          _memoryCache[cacheKey] = metadata[cacheKey]!.cachePath;
+          return true;
+        }
+
+        // 避免重复加载
+        if (_pendingLoads.containsKey(cacheKey)) {
+          return false;
+        }
+
+        try {
+          final result = await _loadCloudSongCoverInternal(song, cacheKey);
+          return result != null;
+        } catch (e) {
+          return false;
+        }
+      });
+
+      final results = await Future.wait(futures);
+      loadedCount += results.where((r) => r).length;
+      failedCount += results.where((r) => !r).length;
+
+      // 每批之间添加小延迟，避免请求过于频繁
+      if (i + batchSize < cloudSongs.length) {
+        await Future.delayed(const Duration(milliseconds: 100));
+      }
+    }
+
+    stopwatch.stop();
+    debugPrint('[CoverArtService] Async preload completed in ${stopwatch.elapsedMilliseconds}ms, '
+        'loaded: $loadedCount, failed: $failedCount');
+  }
+
+  /// 检查歌曲封面是否已缓存（包括异步加载中的）
+  Future<bool> isCoverCached(Song song) async {
+    final cacheKey = _generateCacheFileName(song);
+
+    // 检查内存缓存
+    if (_memoryCache.containsKey(cacheKey)) {
+      final cached = _memoryCache[cacheKey]!;
+      // 如果是默认封面，检查是否正在加载中
+      if (cached.startsWith('assets/')) {
+        return !_pendingLoads.containsKey(cacheKey);
+      }
+      return true;
+    }
+
+    // 检查磁盘缓存
+    await _initCacheDir();
+    final cachePath = path.join(_cacheDir!.path, cacheKey);
+    if (await File(cachePath).exists()) {
+      return true;
+    }
+
+    // 检查缓存元数据
+    final metadata = await _loadCacheMetadata();
+    if (metadata.containsKey(cacheKey)) {
+      return await File(metadata[cacheKey]!.cachePath).exists();
+    }
+
+    return false;
+  }
+
+  /// 同步获取内存缓存中的封面路径（不阻塞，立即返回）
+  /// 返回 null 表示不在内存缓存中
+  String? getCoverFromMemoryCache(Song song) {
+    final cacheKey = _generateCacheFileName(song);
+    return _memoryCache[cacheKey];
+  }
+
+  /// 获取封面的缓存状态信息
+  Future<CoverCacheInfo> getCoverCacheInfo(Song song) async {
+    final cacheKey = _generateCacheFileName(song);
+
+    // 检查内存缓存
+    if (_memoryCache.containsKey(cacheKey)) {
+      final cached = _memoryCache[cacheKey]!;
+      if (!cached.startsWith('assets/')) {
+        return CoverCacheInfo(
+          isCached: true,
+          cachePath: cached,
+          isDefault: false,
+          isLoading: false,
+        );
+      }
+    }
+
+    // 检查磁盘缓存
+    await _initCacheDir();
+    final cachePath = path.join(_cacheDir!.path, cacheKey);
+    if (await File(cachePath).exists()) {
+      return CoverCacheInfo(
+        isCached: true,
+        cachePath: cachePath,
+        isDefault: false,
+        isLoading: false,
+      );
+    }
+
+    // 检查缓存元数据
+    final metadata = await _loadCacheMetadata();
+    if (metadata.containsKey(cacheKey)) {
+      final meta = metadata[cacheKey]!;
+      if (await File(meta.cachePath).exists()) {
+        return CoverCacheInfo(
+          isCached: true,
+          cachePath: meta.cachePath,
+          isDefault: false,
+          isLoading: false,
+        );
+      }
+    }
+
+    // 检查是否正在加载中
+    final isLoading = _pendingLoads.containsKey(cacheKey);
+
+    return CoverCacheInfo(
+      isCached: false,
+      cachePath: null,
+      isDefault: true,
+      isLoading: isLoading,
+    );
   }
 
   /// 清除指定歌曲的封面缓存
-  void clearCacheForSong(Song song) {
+  Future<void> clearCacheForSong(Song song) async {
     final cacheKey = _generateCacheFileName(song);
     _memoryCache.remove(cacheKey);
+
+    // 从元数据中移除
+    final metadata = await _loadCacheMetadata();
+    if (metadata.containsKey(cacheKey)) {
+      metadata.remove(cacheKey);
+      await _saveCacheMetadata(metadata);
+    }
+
+    // 删除缓存文件
+    await _initCacheDir();
+    final cachePath = path.join(_cacheDir!.path, cacheKey);
+    final file = File(cachePath);
+    if (await file.exists()) {
+      await file.delete();
+    }
   }
 
   /// 从音频文件提取元数据和封面
@@ -158,20 +528,7 @@ class CoverArtService {
         return null;
       }
 
-      // 使用 audiotagger 提取封面 (仅支持 Android)
-      if (Platform.isAndroid) {
-        try {
-          final artwork = await _tagger.readArtwork(
-            path: audioPath,
-          );
-          if (artwork != null && artwork.isNotEmpty) {
-            return artwork;
-          }
-        } catch (e) {
-        }
-      }
-
-      // 备用：手动解析
+      // 手动解析音频文件提取封面
       return await _manualExtractCover(file);
     } catch (e) {
       return null;
@@ -669,6 +1026,13 @@ class CoverArtService {
   Future<void> clearCache() async {
     await _initCacheDir();
 
+    // 清除内存缓存
+    _memoryCache.clear();
+
+    // 清除缓存元数据
+    await _saveCacheMetadata({});
+
+    // 删除所有缓存文件
     try {
       final files = await _cacheDir!.list().toList();
       for (final file in files) {
@@ -678,6 +1042,69 @@ class CoverArtService {
       }
     } catch (e) {
     }
+  }
+
+  /// 清除过期的缓存（超过30天的缓存）
+  Future<int> clearExpiredCache({int maxAgeDays = 30}) async {
+    await _initCacheDir();
+
+    int clearedCount = 0;
+    final metadata = await _loadCacheMetadata();
+    final now = DateTime.now();
+    final maxAge = Duration(days: maxAgeDays);
+
+    final expiredKeys = <String>[];
+
+    for (final entry in metadata.entries) {
+      final age = now.difference(entry.value.cachedAt);
+      if (age > maxAge) {
+        // 删除缓存文件
+        try {
+          final file = File(entry.value.cachePath);
+          if (await file.exists()) {
+            await file.delete();
+          }
+        } catch (e) {
+        }
+        expiredKeys.add(entry.key);
+        clearedCount++;
+      }
+    }
+
+    // 从元数据中移除过期项
+    for (final key in expiredKeys) {
+      metadata.remove(key);
+      _memoryCache.remove(key);
+    }
+    await _saveCacheMetadata(metadata);
+
+    return clearedCount;
+  }
+
+  /// 获取缓存统计信息
+  Future<CoverCacheStats> getCacheStats() async {
+    await _initCacheDir();
+
+    final metadata = await _loadCacheMetadata();
+    int totalSize = 0;
+    int fileCount = 0;
+
+    try {
+      await for (final entity in _cacheDir!.list()) {
+        if (entity is File) {
+          totalSize += await entity.length();
+          fileCount++;
+        }
+      }
+    } catch (e) {
+    }
+
+    return CoverCacheStats(
+      fileCount: fileCount,
+      totalSizeBytes: totalSize,
+      memoryCacheCount: _memoryCache.length,
+      metadataCount: metadata.length,
+    );
   }
 
   /// 获取缓存大小
@@ -695,5 +1122,50 @@ class CoverArtService {
     }
 
     return totalSize;
+  }
+}
+
+/// 封面缓存信息
+class CoverCacheInfo {
+  final bool isCached;
+  final String? cachePath;
+  final bool isDefault;
+  final bool isLoading;
+
+  CoverCacheInfo({
+    required this.isCached,
+    this.cachePath,
+    required this.isDefault,
+    required this.isLoading,
+  });
+}
+
+/// 封面缓存统计
+class CoverCacheStats {
+  final int fileCount;
+  final int totalSizeBytes;
+  final int memoryCacheCount;
+  final int metadataCount;
+
+  CoverCacheStats({
+    required this.fileCount,
+    required this.totalSizeBytes,
+    required this.memoryCacheCount,
+    required this.metadataCount,
+  });
+
+  String get formattedSize {
+    if (totalSizeBytes < 1024) {
+      return '$totalSizeBytes B';
+    } else if (totalSizeBytes < 1024 * 1024) {
+      return '${(totalSizeBytes / 1024).toStringAsFixed(2)} KB';
+    } else {
+      return '${(totalSizeBytes / (1024 * 1024)).toStringAsFixed(2)} MB';
+    }
+  }
+
+  @override
+  String toString() {
+    return 'CoverCacheStats(files: $fileCount, size: $formattedSize, memory: $memoryCacheCount, metadata: $metadataCount)';
   }
 }

@@ -87,14 +87,14 @@ class CloudMusicService {
     return url;
   }
 
-  Future<List<CloudSongInfo>> fetchMusicList() async {
+  Future<List<CloudSongInfo>> fetchMusicList({int page = 0, int pageSize = 20}) async {
     if (isS3Mode) {
-      return _fetchS3MusicList();
+      return _fetchS3MusicList(page: page, pageSize: pageSize);
     }
-    return _fetchPublicMusicList();
+    return _fetchPublicMusicList(page: page, pageSize: pageSize);
   }
 
-  Future<List<CloudSongInfo>> _fetchS3MusicList() async {
+  Future<List<CloudSongInfo>> _fetchS3MusicList({int page = 0, int pageSize = 20}) async {
     try {
       final authHeaders = _s3Service!.getAuthHeaders(
         method: 'GET',
@@ -114,12 +114,19 @@ class CloudMusicService {
 
       if (response.statusCode == 200) {
         final xmlContent = utf8.decode(response.bodyBytes);
-        return _parseS3ListResponse(xmlContent);
+        final allSongs = _parseS3ListResponse(xmlContent);
+        // 分页处理
+        final startIndex = page * pageSize;
+        if (startIndex >= allSongs.length) {
+          return [];
+        }
+        final endIndex = (startIndex + pageSize).clamp(0, allSongs.length);
+        return allSongs.sublist(startIndex, endIndex);
       } else {
         return [];
       }
     } catch (e) {
-
+      debugPrint('[_fetchS3MusicList] Error: $e');
       return [];
     }
   }
@@ -167,7 +174,7 @@ class CloudMusicService {
     return songs;
   }
 
-  Future<List<CloudSongInfo>> _fetchPublicMusicList() async {
+  Future<List<CloudSongInfo>> _fetchPublicMusicList({int page = 0, int pageSize = 20}) async {
     try {
       final response = await _httpClient.get(
         Uri.parse('$baseUrl/'),
@@ -176,12 +183,19 @@ class CloudMusicService {
 
       if (response.statusCode == 200) {
         final htmlContent = utf8.decode(response.bodyBytes, allowMalformed: true);
-        return _parseMusicList(htmlContent, baseUrl);
+        final allSongs = _parseMusicList(htmlContent, baseUrl);
+        // 分页处理
+        final startIndex = page * pageSize;
+        if (startIndex >= allSongs.length) {
+          return [];
+        }
+        final endIndex = (startIndex + pageSize).clamp(0, allSongs.length);
+        return allSongs.sublist(startIndex, endIndex);
       } else {
         return [];
       }
     } catch (e) {
-
+      debugPrint('[_fetchPublicMusicList] Error: $e');
       return [];
     }
   }
@@ -366,8 +380,8 @@ class CloudMusicService {
     return '$baseUrl/$key';
   }
 
-  Future<List<Song>> fetchCloudSongs(String sourceId) async {
-    final cloudInfos = await fetchMusicList();
+  Future<List<Song>> fetchCloudSongs(String sourceId, {int page = 0, int pageSize = 20}) async {
+    final cloudInfos = await fetchMusicList(page: page, pageSize: pageSize);
     final songs = <Song>[];
 
     for (var i = 0; i < cloudInfos.length; i++) {

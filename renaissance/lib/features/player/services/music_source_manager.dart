@@ -90,14 +90,21 @@ class MusicSourceManager extends StateNotifier<List<MusicSource>> {
     return _cloudServices[key]!;
   }
 
-  Future<List<Song>> getSongsFromSource(MusicSource source) async {
+  Future<List<Song>> getSongsFromSource(MusicSource source, {int page = 0, int pageSize = 20}) async {
     if (!source.isEnabled) {
       return [];
     }
 
     switch (source.type) {
       case MusicSourceType.local:
-        return await LocalMusicService.scanLocalSongs();
+        // 本地音乐也支持分页
+        final allSongs = await LocalMusicService.scanLocalSongs();
+        final startIndex = page * pageSize;
+        if (startIndex >= allSongs.length) {
+          return [];
+        }
+        final endIndex = (startIndex + pageSize).clamp(0, allSongs.length);
+        return allSongs.sublist(startIndex, endIndex);
 
       case MusicSourceType.cloud:
         if (source.baseUrl == null) {
@@ -116,14 +123,14 @@ class MusicSourceManager extends StateNotifier<List<MusicSource>> {
               : null,
         );
         final service = _getOrCreateCloudService(config);
-        return await service.fetchCloudSongs(source.id);
+        return await service.fetchCloudSongs(source.id, page: page, pageSize: pageSize);
 
       case MusicSourceType.webdav:
         if (source.baseUrl == null) {
           return [];
         }
         final webdavService = _getOrCreateWebDAVService(source);
-        return await webdavService.scanSongs();
+        return await webdavService.scanSongs(page: page, pageSize: pageSize);
     }
   }
 
@@ -135,8 +142,8 @@ class MusicSourceManager extends StateNotifier<List<MusicSource>> {
     return _webdavServices[key]!;
   }
 
-  Future<Playlist> getPlaylistFromSource(MusicSource source) async {
-    final songs = await getSongsFromSource(source);
+  Future<Playlist> getPlaylistFromSource(MusicSource source, {int page = 0, int pageSize = 20}) async {
+    final songs = await getSongsFromSource(source, page: page, pageSize: pageSize);
 
     switch (source.type) {
       case MusicSourceType.local:
@@ -171,13 +178,13 @@ class MusicSourceManager extends StateNotifier<List<MusicSource>> {
     }
   }
 
-  Future<List<Song>> getAllSongs() async {
+  Future<List<Song>> getAllSongs({int page = 0, int pageSize = 20}) async {
     final List<Song> allSongs = [];
     final stopwatch = Stopwatch()..start();
 
     for (final source in state.where((s) => s.isEnabled)) {
       final sourceStopwatch = Stopwatch()..start();
-      final songs = await getSongsFromSource(source);
+      final songs = await getSongsFromSource(source, page: page, pageSize: pageSize);
       sourceStopwatch.stop();
       debugPrint('[MusicSourceManager] Loaded ${songs.length} songs from ${source.name} (${source.type}) in ${sourceStopwatch.elapsedMilliseconds}ms');
       allSongs.addAll(songs);
@@ -188,11 +195,11 @@ class MusicSourceManager extends StateNotifier<List<MusicSource>> {
     return allSongs;
   }
 
-  Future<List<Playlist>> getAllPlaylists() async {
+  Future<List<Playlist>> getAllPlaylists({int page = 0, int pageSize = 20}) async {
     final List<Playlist> playlists = [];
 
     for (final source in state.where((s) => s.isEnabled)) {
-      final playlist = await getPlaylistFromSource(source);
+      final playlist = await getPlaylistFromSource(source, page: page, pageSize: pageSize);
       playlists.add(playlist);
     }
 
