@@ -53,14 +53,27 @@ dependencies:
   # HTTP请求
   http: ^1.1.0
 
+  # 加密
+  crypto: ^3.0.3
+
+  # XML解析
+  xml: ^6.5.0
+
   # 文件选择器
   file_selector: ^1.0.3
+  file_picker: ^6.1.1
+
+  # 设备信息检测
+  device_info_plus: ^9.0.0
 
   # 日期格式化
   intl: 0.20.2
 
   # 字体
   google_fonts: ^6.1.0
+
+  # 网页打开
+  url_launcher: ^6.2.5
 
 dev_dependencies:
   flutter_test:

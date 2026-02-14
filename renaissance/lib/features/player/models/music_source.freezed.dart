@@ -25,9 +25,15 @@ mixin _$MusicSource {
   MusicSourceType get type => throw _privateConstructorUsedError;
   bool get isEnabled => throw _privateConstructorUsedError;
   CloudProvider? get cloudProvider => throw _privateConstructorUsedError;
+  WebDAVProvider? get webdavProvider => throw _privateConstructorUsedError;
   String? get baseUrl => throw _privateConstructorUsedError;
+  String? get customDomain => throw _privateConstructorUsedError;
   String? get bucketName => throw _privateConstructorUsedError;
+  String? get accessKey => throw _privateConstructorUsedError;
+  String? get secretKey => throw _privateConstructorUsedError;
+  String? get region => throw _privateConstructorUsedError;
   String? get customHeaders => throw _privateConstructorUsedError;
+  String? get webdavPath => throw _privateConstructorUsedError;
   DateTime? get lastSyncTime => throw _privateConstructorUsedError;
   int get songCount => throw _privateConstructorUsedError;
 
@@ -49,9 +55,15 @@ abstract class $MusicSourceCopyWith<$Res> {
       MusicSourceType type,
       bool isEnabled,
       CloudProvider? cloudProvider,
+      WebDAVProvider? webdavProvider,
       String? baseUrl,
+      String? customDomain,
       String? bucketName,
+      String? accessKey,
+      String? secretKey,
+      String? region,
       String? customHeaders,
+      String? webdavPath,
       DateTime? lastSyncTime,
       int songCount});
 }
@@ -74,9 +86,15 @@ class _$MusicSourceCopyWithImpl<$Res, $Val extends MusicSource>
     Object? type = null,
     Object? isEnabled = null,
     Object? cloudProvider = freezed,
+    Object? webdavProvider = freezed,
     Object? baseUrl = freezed,
+    Object? customDomain = freezed,
     Object? bucketName = freezed,
+    Object? accessKey = freezed,
+    Object? secretKey = freezed,
+    Object? region = freezed,
     Object? customHeaders = freezed,
+    Object? webdavPath = freezed,
     Object? lastSyncTime = freezed,
     Object? songCount = null,
   }) {
@@ -101,17 +119,41 @@ class _$MusicSourceCopyWithImpl<$Res, $Val extends MusicSource>
           ? _value.cloudProvider
           : cloudProvider // ignore: cast_nullable_to_non_nullable
               as CloudProvider?,
+      webdavProvider: freezed == webdavProvider
+          ? _value.webdavProvider
+          : webdavProvider // ignore: cast_nullable_to_non_nullable
+              as WebDAVProvider?,
       baseUrl: freezed == baseUrl
           ? _value.baseUrl
           : baseUrl // ignore: cast_nullable_to_non_nullable
+              as String?,
+      customDomain: freezed == customDomain
+          ? _value.customDomain
+          : customDomain // ignore: cast_nullable_to_non_nullable
               as String?,
       bucketName: freezed == bucketName
           ? _value.bucketName
           : bucketName // ignore: cast_nullable_to_non_nullable
               as String?,
+      accessKey: freezed == accessKey
+          ? _value.accessKey
+          : accessKey // ignore: cast_nullable_to_non_nullable
+              as String?,
+      secretKey: freezed == secretKey
+          ? _value.secretKey
+          : secretKey // ignore: cast_nullable_to_non_nullable
+              as String?,
+      region: freezed == region
+          ? _value.region
+          : region // ignore: cast_nullable_to_non_nullable
+              as String?,
       customHeaders: freezed == customHeaders
           ? _value.customHeaders
           : customHeaders // ignore: cast_nullable_to_non_nullable
+              as String?,
+      webdavPath: freezed == webdavPath
+          ? _value.webdavPath
+          : webdavPath // ignore: cast_nullable_to_non_nullable
               as String?,
       lastSyncTime: freezed == lastSyncTime
           ? _value.lastSyncTime
@@ -139,9 +181,15 @@ abstract class _$$MusicSourceImplCopyWith<$Res>
       MusicSourceType type,
       bool isEnabled,
       CloudProvider? cloudProvider,
+      WebDAVProvider? webdavProvider,
       String? baseUrl,
+      String? customDomain,
       String? bucketName,
+      String? accessKey,
+      String? secretKey,
+      String? region,
       String? customHeaders,
+      String? webdavPath,
       DateTime? lastSyncTime,
       int songCount});
 }
@@ -162,9 +210,15 @@ class __$$MusicSourceImplCopyWithImpl<$Res>
     Object? type = null,
     Object? isEnabled = null,
     Object? cloudProvider = freezed,
+    Object? webdavProvider = freezed,
     Object? baseUrl = freezed,
+    Object? customDomain = freezed,
     Object? bucketName = freezed,
+    Object? accessKey = freezed,
+    Object? secretKey = freezed,
+    Object? region = freezed,
     Object? customHeaders = freezed,
+    Object? webdavPath = freezed,
     Object? lastSyncTime = freezed,
     Object? songCount = null,
   }) {
@@ -189,17 +243,41 @@ class __$$MusicSourceImplCopyWithImpl<$Res>
           ? _value.cloudProvider
           : cloudProvider // ignore: cast_nullable_to_non_nullable
               as CloudProvider?,
+      webdavProvider: freezed == webdavProvider
+          ? _value.webdavProvider
+          : webdavProvider // ignore: cast_nullable_to_non_nullable
+              as WebDAVProvider?,
       baseUrl: freezed == baseUrl
           ? _value.baseUrl
           : baseUrl // ignore: cast_nullable_to_non_nullable
+              as String?,
+      customDomain: freezed == customDomain
+          ? _value.customDomain
+          : customDomain // ignore: cast_nullable_to_non_nullable
               as String?,
       bucketName: freezed == bucketName
           ? _value.bucketName
           : bucketName // ignore: cast_nullable_to_non_nullable
               as String?,
+      accessKey: freezed == accessKey
+          ? _value.accessKey
+          : accessKey // ignore: cast_nullable_to_non_nullable
+              as String?,
+      secretKey: freezed == secretKey
+          ? _value.secretKey
+          : secretKey // ignore: cast_nullable_to_non_nullable
+              as String?,
+      region: freezed == region
+          ? _value.region
+          : region // ignore: cast_nullable_to_non_nullable
+              as String?,
       customHeaders: freezed == customHeaders
           ? _value.customHeaders
           : customHeaders // ignore: cast_nullable_to_non_nullable
+              as String?,
+      webdavPath: freezed == webdavPath
+          ? _value.webdavPath
+          : webdavPath // ignore: cast_nullable_to_non_nullable
               as String?,
       lastSyncTime: freezed == lastSyncTime
           ? _value.lastSyncTime
@@ -222,9 +300,15 @@ class _$MusicSourceImpl implements _MusicSource {
       required this.type,
       required this.isEnabled,
       this.cloudProvider,
+      this.webdavProvider,
       this.baseUrl,
+      this.customDomain,
       this.bucketName,
+      this.accessKey,
+      this.secretKey,
+      this.region,
       this.customHeaders,
+      this.webdavPath,
       this.lastSyncTime,
       this.songCount = 0});
 
@@ -242,11 +326,23 @@ class _$MusicSourceImpl implements _MusicSource {
   @override
   final CloudProvider? cloudProvider;
   @override
+  final WebDAVProvider? webdavProvider;
+  @override
   final String? baseUrl;
+  @override
+  final String? customDomain;
   @override
   final String? bucketName;
   @override
+  final String? accessKey;
+  @override
+  final String? secretKey;
+  @override
+  final String? region;
+  @override
   final String? customHeaders;
+  @override
+  final String? webdavPath;
   @override
   final DateTime? lastSyncTime;
   @override
@@ -255,7 +351,7 @@ class _$MusicSourceImpl implements _MusicSource {
 
   @override
   String toString() {
-    return 'MusicSource(id: $id, name: $name, type: $type, isEnabled: $isEnabled, cloudProvider: $cloudProvider, baseUrl: $baseUrl, bucketName: $bucketName, customHeaders: $customHeaders, lastSyncTime: $lastSyncTime, songCount: $songCount)';
+    return 'MusicSource(id: $id, name: $name, type: $type, isEnabled: $isEnabled, cloudProvider: $cloudProvider, webdavProvider: $webdavProvider, baseUrl: $baseUrl, customDomain: $customDomain, bucketName: $bucketName, accessKey: $accessKey, secretKey: $secretKey, region: $region, customHeaders: $customHeaders, webdavPath: $webdavPath, lastSyncTime: $lastSyncTime, songCount: $songCount)';
   }
 
   @override
@@ -270,11 +366,22 @@ class _$MusicSourceImpl implements _MusicSource {
                 other.isEnabled == isEnabled) &&
             (identical(other.cloudProvider, cloudProvider) ||
                 other.cloudProvider == cloudProvider) &&
+            (identical(other.webdavProvider, webdavProvider) ||
+                other.webdavProvider == webdavProvider) &&
             (identical(other.baseUrl, baseUrl) || other.baseUrl == baseUrl) &&
+            (identical(other.customDomain, customDomain) ||
+                other.customDomain == customDomain) &&
             (identical(other.bucketName, bucketName) ||
                 other.bucketName == bucketName) &&
+            (identical(other.accessKey, accessKey) ||
+                other.accessKey == accessKey) &&
+            (identical(other.secretKey, secretKey) ||
+                other.secretKey == secretKey) &&
+            (identical(other.region, region) || other.region == region) &&
             (identical(other.customHeaders, customHeaders) ||
                 other.customHeaders == customHeaders) &&
+            (identical(other.webdavPath, webdavPath) ||
+                other.webdavPath == webdavPath) &&
             (identical(other.lastSyncTime, lastSyncTime) ||
                 other.lastSyncTime == lastSyncTime) &&
             (identical(other.songCount, songCount) ||
@@ -290,9 +397,15 @@ class _$MusicSourceImpl implements _MusicSource {
       type,
       isEnabled,
       cloudProvider,
+      webdavProvider,
       baseUrl,
+      customDomain,
       bucketName,
+      accessKey,
+      secretKey,
+      region,
       customHeaders,
+      webdavPath,
       lastSyncTime,
       songCount);
 
@@ -317,9 +430,15 @@ abstract class _MusicSource implements MusicSource {
       required final MusicSourceType type,
       required final bool isEnabled,
       final CloudProvider? cloudProvider,
+      final WebDAVProvider? webdavProvider,
       final String? baseUrl,
+      final String? customDomain,
       final String? bucketName,
+      final String? accessKey,
+      final String? secretKey,
+      final String? region,
       final String? customHeaders,
+      final String? webdavPath,
       final DateTime? lastSyncTime,
       final int songCount}) = _$MusicSourceImpl;
 
@@ -337,11 +456,23 @@ abstract class _MusicSource implements MusicSource {
   @override
   CloudProvider? get cloudProvider;
   @override
+  WebDAVProvider? get webdavProvider;
+  @override
   String? get baseUrl;
+  @override
+  String? get customDomain;
   @override
   String? get bucketName;
   @override
+  String? get accessKey;
+  @override
+  String? get secretKey;
+  @override
+  String? get region;
+  @override
   String? get customHeaders;
+  @override
+  String? get webdavPath;
   @override
   DateTime? get lastSyncTime;
   @override
@@ -360,6 +491,7 @@ CloudMusicConfig _$CloudMusicConfigFromJson(Map<String, dynamic> json) {
 mixin _$CloudMusicConfig {
   CloudProvider get provider => throw _privateConstructorUsedError;
   String get baseUrl => throw _privateConstructorUsedError;
+  String? get customDomain => throw _privateConstructorUsedError;
   String? get bucketName => throw _privateConstructorUsedError;
   String? get accessKey => throw _privateConstructorUsedError;
   String? get secretKey => throw _privateConstructorUsedError;
@@ -384,6 +516,7 @@ abstract class $CloudMusicConfigCopyWith<$Res> {
   $Res call(
       {CloudProvider provider,
       String baseUrl,
+      String? customDomain,
       String? bucketName,
       String? accessKey,
       String? secretKey,
@@ -409,6 +542,7 @@ class _$CloudMusicConfigCopyWithImpl<$Res, $Val extends CloudMusicConfig>
   $Res call({
     Object? provider = null,
     Object? baseUrl = null,
+    Object? customDomain = freezed,
     Object? bucketName = freezed,
     Object? accessKey = freezed,
     Object? secretKey = freezed,
@@ -427,6 +561,10 @@ class _$CloudMusicConfigCopyWithImpl<$Res, $Val extends CloudMusicConfig>
           ? _value.baseUrl
           : baseUrl // ignore: cast_nullable_to_non_nullable
               as String,
+      customDomain: freezed == customDomain
+          ? _value.customDomain
+          : customDomain // ignore: cast_nullable_to_non_nullable
+              as String?,
       bucketName: freezed == bucketName
           ? _value.bucketName
           : bucketName // ignore: cast_nullable_to_non_nullable
@@ -474,6 +612,7 @@ abstract class _$$CloudMusicConfigImplCopyWith<$Res>
   $Res call(
       {CloudProvider provider,
       String baseUrl,
+      String? customDomain,
       String? bucketName,
       String? accessKey,
       String? secretKey,
@@ -497,6 +636,7 @@ class __$$CloudMusicConfigImplCopyWithImpl<$Res>
   $Res call({
     Object? provider = null,
     Object? baseUrl = null,
+    Object? customDomain = freezed,
     Object? bucketName = freezed,
     Object? accessKey = freezed,
     Object? secretKey = freezed,
@@ -515,6 +655,10 @@ class __$$CloudMusicConfigImplCopyWithImpl<$Res>
           ? _value.baseUrl
           : baseUrl // ignore: cast_nullable_to_non_nullable
               as String,
+      customDomain: freezed == customDomain
+          ? _value.customDomain
+          : customDomain // ignore: cast_nullable_to_non_nullable
+              as String?,
       bucketName: freezed == bucketName
           ? _value.bucketName
           : bucketName // ignore: cast_nullable_to_non_nullable
@@ -557,6 +701,7 @@ class _$CloudMusicConfigImpl implements _CloudMusicConfig {
   const _$CloudMusicConfigImpl(
       {required this.provider,
       required this.baseUrl,
+      this.customDomain,
       this.bucketName,
       this.accessKey,
       this.secretKey,
@@ -574,6 +719,8 @@ class _$CloudMusicConfigImpl implements _CloudMusicConfig {
   final CloudProvider provider;
   @override
   final String baseUrl;
+  @override
+  final String? customDomain;
   @override
   final String? bucketName;
   @override
@@ -604,7 +751,7 @@ class _$CloudMusicConfigImpl implements _CloudMusicConfig {
 
   @override
   String toString() {
-    return 'CloudMusicConfig(provider: $provider, baseUrl: $baseUrl, bucketName: $bucketName, accessKey: $accessKey, secretKey: $secretKey, region: $region, customHeaders: $customHeaders, useHttps: $useHttps, enableCache: $enableCache, cacheExpireDays: $cacheExpireDays)';
+    return 'CloudMusicConfig(provider: $provider, baseUrl: $baseUrl, customDomain: $customDomain, bucketName: $bucketName, accessKey: $accessKey, secretKey: $secretKey, region: $region, customHeaders: $customHeaders, useHttps: $useHttps, enableCache: $enableCache, cacheExpireDays: $cacheExpireDays)';
   }
 
   @override
@@ -615,6 +762,8 @@ class _$CloudMusicConfigImpl implements _CloudMusicConfig {
             (identical(other.provider, provider) ||
                 other.provider == provider) &&
             (identical(other.baseUrl, baseUrl) || other.baseUrl == baseUrl) &&
+            (identical(other.customDomain, customDomain) ||
+                other.customDomain == customDomain) &&
             (identical(other.bucketName, bucketName) ||
                 other.bucketName == bucketName) &&
             (identical(other.accessKey, accessKey) ||
@@ -638,6 +787,7 @@ class _$CloudMusicConfigImpl implements _CloudMusicConfig {
       runtimeType,
       provider,
       baseUrl,
+      customDomain,
       bucketName,
       accessKey,
       secretKey,
@@ -666,6 +816,7 @@ abstract class _CloudMusicConfig implements CloudMusicConfig {
   const factory _CloudMusicConfig(
       {required final CloudProvider provider,
       required final String baseUrl,
+      final String? customDomain,
       final String? bucketName,
       final String? accessKey,
       final String? secretKey,
@@ -682,6 +833,8 @@ abstract class _CloudMusicConfig implements CloudMusicConfig {
   CloudProvider get provider;
   @override
   String get baseUrl;
+  @override
+  String? get customDomain;
   @override
   String? get bucketName;
   @override

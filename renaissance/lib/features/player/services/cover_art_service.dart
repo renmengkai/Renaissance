@@ -21,6 +21,8 @@ class CoverArtService {
 
   Directory? _cacheDir;
 
+  final Map<String, String> _memoryCache = {};
+
   Future<void> _initCacheDir() async {
     if (_cacheDir != null) return;
 
@@ -33,23 +35,36 @@ class CoverArtService {
   }
 
   /// 获取歌曲封面
-  /// 优先级：1.音频文件内嵌封面 2.在线搜索 3.默认封面
+  /// 优先级：1.内存缓存 2.磁盘缓存 3.音频文件内嵌封面 4.在线搜索 5.默认封面
   Future<String> getCoverArt(Song song) async {
     await _initCacheDir();
 
-    final cacheFileName = _generateCacheFileName(song);
+    final cacheKey = _generateCacheFileName(song);
+
+    if (_memoryCache.containsKey(cacheKey)) {
+      return _memoryCache[cacheKey]!;
+    }
+
+    final cacheFileName = cacheKey;
     final cachePath = path.join(_cacheDir!.path, cacheFileName);
 
     if (await File(cachePath).exists()) {
-      debugPrint('[CoverArt] Using cached cover for: ${song.title}');
+      _memoryCache[cacheKey] = cachePath;
       return cachePath;
+    }
+
+    // 云存储歌曲直接使用默认封面，避免耗时的在线搜索
+    if (song.audioUrl.startsWith('http://') || song.audioUrl.startsWith('https://')) {
+      final defaultCover = _getDefaultCoverPath(song);
+      _memoryCache[cacheKey] = defaultCover;
+      return defaultCover;
     }
 
     // 1. 尝试从音频文件提取封面
     final embeddedCover = await _extractEmbeddedCover(song.audioUrl);
     if (embeddedCover != null) {
       await _saveCoverToCache(embeddedCover, cachePath);
-      debugPrint('[CoverArt] Extracted embedded cover for: ${song.title}');
+      _memoryCache[cacheKey] = cachePath;
       return cachePath;
     }
 
@@ -57,12 +72,74 @@ class CoverArtService {
     final onlineCover = await _searchOnlineCover(song);
     if (onlineCover != null) {
       await _saveCoverToCache(onlineCover, cachePath);
-      debugPrint('[CoverArt] Found online cover for: ${song.title}');
+      _memoryCache[cacheKey] = cachePath;
       return cachePath;
     }
 
-    debugPrint('[CoverArt] Using default cover for: ${song.title}');
-    return _getDefaultCoverPath(song);
+    final defaultCover = _getDefaultCoverPath(song);
+    _memoryCache[cacheKey] = defaultCover;
+    return defaultCover;
+  }
+
+  /// 预加载多个歌曲的封面
+  Future<void> preloadCovers(List<Song> songs) async {
+    await _initCacheDir();
+
+    debugPrint('[CoverArtService] Starting preload for ${songs.length} songs');
+    final stopwatch = Stopwatch()..start();
+
+    int cloudSongCount = 0;
+    int localSongCount = 0;
+
+    for (final song in songs) {
+      final cacheKey = _generateCacheFileName(song);
+      if (_memoryCache.containsKey(cacheKey)) continue;
+
+      final cacheFileName = cacheKey;
+      final cachePath = path.join(_cacheDir!.path, cacheFileName);
+
+      if (await File(cachePath).exists()) {
+        _memoryCache[cacheKey] = cachePath;
+        continue;
+      }
+
+      // 云存储歌曲跳过在线搜索，直接使用默认封面
+      if (song.audioUrl.startsWith('http://') || song.audioUrl.startsWith('https://')) {
+        cloudSongCount++;
+        final defaultCover = _getDefaultCoverPath(song);
+        _memoryCache[cacheKey] = defaultCover;
+        continue;
+      }
+
+      localSongCount++;
+
+      final embeddedCover = await _extractEmbeddedCover(song.audioUrl);
+      if (embeddedCover != null) {
+        await _saveCoverToCache(embeddedCover, cachePath);
+        _memoryCache[cacheKey] = cachePath;
+        continue;
+      }
+
+      final onlineCover = await _searchOnlineCover(song);
+      if (onlineCover != null) {
+        await _saveCoverToCache(onlineCover, cachePath);
+        _memoryCache[cacheKey] = cachePath;
+        continue;
+      }
+
+      final defaultCover = _getDefaultCoverPath(song);
+      _memoryCache[cacheKey] = defaultCover;
+    }
+
+    stopwatch.stop();
+    debugPrint('[CoverArtService] Preload completed in ${stopwatch.elapsedMilliseconds}ms, '
+        'cloud songs: $cloudSongCount, local songs: $localSongCount');
+  }
+
+  /// 清除指定歌曲的封面缓存
+  void clearCacheForSong(Song song) {
+    final cacheKey = _generateCacheFileName(song);
+    _memoryCache.remove(cacheKey);
   }
 
   /// 从音频文件提取元数据和封面
@@ -72,9 +149,12 @@ class CoverArtService {
         return null;
       }
 
+      if (audioPath.startsWith('http://') || audioPath.startsWith('https://')) {
+        return null;
+      }
+
       final file = File(audioPath);
       if (!await file.exists()) {
-        debugPrint('[CoverArt] File not found: $audioPath');
         return null;
       }
 
@@ -85,18 +165,15 @@ class CoverArtService {
             path: audioPath,
           );
           if (artwork != null && artwork.isNotEmpty) {
-            debugPrint('[CoverArt] Successfully extracted artwork via audiotagger');
             return artwork;
           }
         } catch (e) {
-          debugPrint('[CoverArt] Audiotagger error: $e');
         }
       }
 
       // 备用：手动解析
       return await _manualExtractCover(file);
     } catch (e) {
-      debugPrint('[CoverArt] Error extracting embedded cover: $e');
       return null;
     }
   }
@@ -119,7 +196,6 @@ class CoverArtService {
           return null;
       }
     } catch (e) {
-      debugPrint('[CoverArt] Manual extraction error: $e');
       return null;
     }
   }
@@ -173,7 +249,6 @@ class CoverArtService {
         }
       }
     } catch (e) {
-      debugPrint('[CoverArt] Error extracting MP3 cover: $e');
     }
     return null;
   }
@@ -225,7 +300,6 @@ class CoverArtService {
         if (isLastBlock) break;
       }
     } catch (e) {
-      debugPrint('[CoverArt] Error extracting FLAC cover: $e');
     }
     return null;
   }
@@ -235,7 +309,6 @@ class CoverArtService {
     try {
       return _findMp4Atom(bytes, 'covr');
     } catch (e) {
-      debugPrint('[CoverArt] Error extracting MP4 cover: $e');
     }
     return null;
   }
@@ -297,11 +370,9 @@ class CoverArtService {
           onTimeout: () => null,
         );
         if (cover != null) {
-          debugPrint('[CoverArt] Found cover from $name');
           return cover;
         }
       } catch (e) {
-        debugPrint('[CoverArt] Error from $name: $e');
       }
     }
 
@@ -321,8 +392,6 @@ class CoverArtService {
 
       final encodedQuery = Uri.encodeQueryComponent(query);
       final searchUrl = 'https://itunes.apple.com/search?term=$encodedQuery&media=music&limit=5';
-
-      debugPrint('[CoverArt] iTunes search: $searchUrl');
 
       final response = await http.get(
         Uri.parse(searchUrl),
@@ -347,8 +416,6 @@ class CoverArtService {
               // 获取高清封面 (600x600)
               artworkUrl = artworkUrl.replaceAll('100x100', '600x600');
 
-              debugPrint('[CoverArt] iTunes found: $trackName by $artistName');
-
               final imageResponse = await http.get(Uri.parse(artworkUrl));
               if (imageResponse.statusCode == 200 && imageResponse.bodyBytes.isNotEmpty) {
                 return imageResponse.bodyBytes;
@@ -358,7 +425,6 @@ class CoverArtService {
         }
       }
     } catch (e) {
-      debugPrint('[CoverArt] iTunes search error: $e');
     }
     return null;
   }
@@ -375,8 +441,6 @@ class CoverArtService {
 
       final encodedQuery = Uri.encodeQueryComponent(query);
       final searchUrl = 'https://api.deezer.com/search?q=$encodedQuery&limit=5';
-
-      debugPrint('[CoverArt] Deezer search: $searchUrl');
 
       final response = await http.get(
         Uri.parse(searchUrl),
@@ -397,8 +461,6 @@ class CoverArtService {
             if (coverUrl != null) {
               coverUrl = coverUrl.replaceAll(r'\/', '/');
 
-              debugPrint('[CoverArt] Deezer found cover');
-
               final imageResponse = await http.get(Uri.parse(coverUrl));
               if (imageResponse.statusCode == 200 && imageResponse.bodyBytes.isNotEmpty) {
                 return imageResponse.bodyBytes;
@@ -408,7 +470,6 @@ class CoverArtService {
         }
       }
     } catch (e) {
-      debugPrint('[CoverArt] Deezer search error: $e');
     }
     return null;
   }
@@ -425,8 +486,6 @@ class CoverArtService {
 
       final encodedQuery = Uri.encodeQueryComponent(query);
       final searchUrl = 'https://api.spotify.com/v1/search?q=$encodedQuery&type=track&limit=5';
-
-      debugPrint('[CoverArt] Spotify search: $searchUrl');
 
       // 注意：Spotify API 需要 access token，这里尝试使用公开端点
       // 如果失败，跳过此源
@@ -459,8 +518,6 @@ class CoverArtService {
               imageUrl ??= images.first['url'] as String?;
 
               if (imageUrl != null) {
-                debugPrint('[CoverArt] Spotify found cover');
-
                 final imageResponse = await http.get(Uri.parse(imageUrl));
                 if (imageResponse.statusCode == 200 && imageResponse.bodyBytes.isNotEmpty) {
                   return imageResponse.bodyBytes;
@@ -471,7 +528,6 @@ class CoverArtService {
         }
       }
     } catch (e) {
-      debugPrint('[CoverArt] Spotify search error: $e');
     }
     return null;
   }
@@ -488,8 +544,6 @@ class CoverArtService {
 
       final encodedQuery = Uri.encodeQueryComponent(query);
       final searchUrl = 'https://musicbrainz.org/ws/2/recording/?query=$encodedQuery&fmt=json&limit=3';
-
-      debugPrint('[CoverArt] MusicBrainz search: $searchUrl');
 
       final response = await http.get(
         Uri.parse(searchUrl),
@@ -517,7 +571,6 @@ class CoverArtService {
                 );
 
                 if (coverResponse.statusCode == 200 && coverResponse.bodyBytes.isNotEmpty) {
-                  debugPrint('[CoverArt] MusicBrainz found cover');
                   return coverResponse.bodyBytes;
                 }
               }
@@ -526,7 +579,6 @@ class CoverArtService {
         }
       }
     } catch (e) {
-      debugPrint('[CoverArt] MusicBrainz search error: $e');
     }
     return null;
   }
@@ -541,8 +593,6 @@ class CoverArtService {
       final artist = Uri.encodeQueryComponent(song.artist);
       final album = Uri.encodeQueryComponent(song.album.isNotEmpty ? song.album : song.title);
       final searchUrl = 'https://ws.audioscrobbler.com/2.0/?method=album.getinfo&api_key=demo&artist=$artist&album=$album&format=json';
-
-      debugPrint('[CoverArt] Last.fm search: $searchUrl');
 
       final response = await http.get(
         Uri.parse(searchUrl),
@@ -567,8 +617,6 @@ class CoverArtService {
           }
 
           if (imageUrl != null && imageUrl.isNotEmpty) {
-            debugPrint('[CoverArt] Last.fm found cover');
-
             final imageResponse = await http.get(Uri.parse(imageUrl));
             if (imageResponse.statusCode == 200 && imageResponse.bodyBytes.isNotEmpty) {
               return imageResponse.bodyBytes;
@@ -577,7 +625,6 @@ class CoverArtService {
         }
       }
     } catch (e) {
-      debugPrint('[CoverArt] Last.fm search error: $e');
     }
     return null;
   }
@@ -605,7 +652,6 @@ class CoverArtService {
         await file.writeAsBytes(imageData);
       }
     } catch (e) {
-      debugPrint('[CoverArt] Error saving cover to cache: $e');
       try {
         final file = File(cachePath);
         await file.writeAsBytes(imageData);
@@ -630,9 +676,7 @@ class CoverArtService {
           await file.delete();
         }
       }
-      debugPrint('[CoverArt] Cover cache cleared');
     } catch (e) {
-      debugPrint('[CoverArt] Error clearing cover cache: $e');
     }
   }
 
@@ -648,7 +692,6 @@ class CoverArtService {
         }
       }
     } catch (e) {
-      debugPrint('[CoverArt] Error calculating cache size: $e');
     }
 
     return totalSize;

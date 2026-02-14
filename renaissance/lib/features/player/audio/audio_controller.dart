@@ -3,7 +3,10 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:just_audio/just_audio.dart' as just_audio;
+import 'package:http/http.dart' as http;
 import '../models/song.dart';
+import '../models/music_source.dart';
+import '../services/music_source_manager.dart';
 
 // 播放器状态
 class AudioPlaybackStatus {
@@ -52,22 +55,27 @@ class AudioPlaybackStatus {
 
 // 音频控制器
 class AudioController extends StateNotifier<AudioPlaybackStatus> {
+  final Ref _ref;
   final just_audio.AudioPlayer _audioPlayer = just_audio.AudioPlayer();
   StreamSubscription<Duration>? _positionSubscription;
   StreamSubscription<just_audio.PlayerState>? _playerStateSubscription;
+  bool _isLoading = false;
 
-  AudioController() : super(const AudioPlaybackStatus()) {
+  AudioController(this._ref) : super(const AudioPlaybackStatus()) {
     _init();
   }
 
   void _init() {
+    // 设置默认音量为 0.5
+    _audioPlayer.setVolume(0.5);
+
     // 监听播放位置
     _positionSubscription = _audioPlayer.positionStream.listen((position) {
       final duration = _audioPlayer.duration ?? Duration.zero;
       final progress = duration.inMilliseconds > 0
           ? position.inMilliseconds / duration.inMilliseconds
           : 0.0;
-      
+
       state = state.copyWith(
         position: position,
         duration: duration,
@@ -93,59 +101,89 @@ class AudioController extends StateNotifier<AudioPlaybackStatus> {
   }
 
   Future<void> loadSong(Song song) async {
-    state = state.copyWith(isLoading: true, currentSong: song, errorMessage: null);
+    if (_isLoading) return;
+    _isLoading = true;
+    
+    // 立即更新歌曲信息，不需要等待网络操作
+    state = state.copyWith(
+      isLoading: true, 
+      currentSong: song, 
+      errorMessage: null,
+      position: Duration.zero,
+      progress: 0.0,
+    );
 
+    // 执行后台加载并等待完成
+    await _loadAudioInBackground(song);
+  }
+
+  Future<void> _loadAudioInBackground(Song song) async {
     try {
-      // 支持网络音频、本地文件和asset音频
-      if (song.audioUrl.startsWith('http')) {
-        debugPrint('[AudioController] Loading network audio: ${song.audioUrl}');
-        await _audioPlayer.setUrl(song.audioUrl);
-      } else if (song.audioUrl.startsWith('assets/')) {
-        debugPrint('[AudioController] Loading asset audio: ${song.audioUrl}');
-        await _audioPlayer.setAsset(song.audioUrl);
-      } else {
-        // 本地文件路径
-        debugPrint('[AudioController] Loading local file audio: ${song.audioUrl}');
-        final file = File(song.audioUrl);
-        if (await file.exists()) {
-          final fileSize = await file.length();
-          debugPrint('[AudioController] File exists, size: $fileSize bytes');
-          
-          // 检查文件是否有读取权限
-          try {
-            await file.openRead(0, 1).first;
-            debugPrint('[AudioController] File is readable');
-          } catch (e) {
-            debugPrint('[AudioController] File is not readable: $e');
-            throw Exception('无法读取音频文件，请检查文件权限: ${song.audioUrl}');
-          }
-          
-          await _audioPlayer.setFilePath(song.audioUrl);
-        } else {
-          debugPrint('[AudioController] File does not exist: ${song.audioUrl}');
-          throw Exception('音频文件不存在: ${song.audioUrl}');
+      String audioUrl = song.audioUrl;
+
+      // 异步获取云存储签名URL
+      if (song.sourceType == MusicSourceType.cloud && song.cloudKey != null) {
+        final manager = _ref.read(musicSourceManagerProvider.notifier);
+        try {
+          audioUrl = await manager.getSignedUrlForSong(song);
+        } catch (e) {
+          // 获取签名URL失败不影响歌曲信息显示
         }
       }
-      
-      // 等待音频加载完成并获取时长
-      await _audioPlayer.load();
-      final loadedDuration = _audioPlayer.duration;
-      debugPrint('[AudioController] Audio loaded successfully, duration: $loadedDuration');
-      
+
+      Duration? loadedDuration;
+      bool loadSuccess = false;
+
+      if (audioUrl.startsWith('http')) {
+        try {
+          loadedDuration = await _audioPlayer.setUrl(audioUrl);
+          loadSuccess = true;
+        } catch (e) {
+          // 网络URL加载失败，尝试其他方式
+        }
+      } else if (audioUrl.startsWith('assets/')) {
+        try {
+          loadedDuration = await _audioPlayer.setAsset(audioUrl);
+          loadSuccess = true;
+        } catch (e) {
+          // 资产文件加载失败
+        }
+      } else {
+        // 本地文件路径
+        final file = File(song.audioUrl);
+        if (await file.exists()) {
+          try {
+            loadedDuration = await _audioPlayer.setFilePath(song.audioUrl);
+            loadSuccess = true;
+          } catch (e) {
+            // 本地文件加载失败
+          }
+        }
+      }
+
+      // 如果加载失败，尝试使用原始audioUrl作为最后手段
+      if (!loadSuccess && audioUrl.isNotEmpty) {
+        try {
+          loadedDuration = await _audioPlayer.setUrl(audioUrl);
+          loadSuccess = true;
+        } catch (e) {
+          // 所有加载方式都失败
+        }
+      }
+
+      final finalDuration = loadedDuration ?? _audioPlayer.duration;
+
+      _isLoading = false;
       state = state.copyWith(
         isLoading: false,
-        duration: loadedDuration ?? song.duration,
-        errorMessage: null,
+        duration: finalDuration ?? song.duration,
+        errorMessage: loadSuccess ? null : '音频加载失败',
       );
     } catch (e, stackTrace) {
-      debugPrint('[AudioController] Error loading audio: $e');
-      debugPrint('[AudioController] Stack trace: $stackTrace');
-      // 错误信息只在控制台打印，不显示在 UI 上
-      // 即使加载失败，也保持 currentSong 以便 UI 显示正确的歌曲信息
+      _isLoading = false;
       state = state.copyWith(
         isLoading: false,
-        errorMessage: null,
-        // 重置播放状态，但保留 currentSong
+        errorMessage: '播放错误: $e',
         isPlaying: false,
         position: Duration.zero,
         progress: 0.0,
@@ -154,7 +192,39 @@ class AudioController extends StateNotifier<AudioPlaybackStatus> {
   }
 
   Future<void> play() async {
-    await _audioPlayer.play();
+
+    try {
+      // 检查播放器状态
+      final playerState = _audioPlayer.playerState;
+
+      
+      // 如果播放器处于异常状态，尝试重新设置
+      if (playerState.processingState == just_audio.ProcessingState.idle) {
+
+        if (state.currentSong != null) {
+
+          await loadSong(state.currentSong!);
+        }
+      }
+      
+      await _audioPlayer.play();
+
+    } catch (e, stackTrace) {
+
+      
+      // 尝试重新加载歌曲并播放
+      if (state.currentSong != null) {
+        try {
+
+          await loadSong(state.currentSong!);
+          await Future.delayed(const Duration(milliseconds: 500));
+          await _audioPlayer.play();
+
+        } catch (reloadError) {
+
+        }
+      }
+    }
   }
 
   Future<void> pause() async {
@@ -184,7 +254,6 @@ class AudioController extends StateNotifier<AudioPlaybackStatus> {
   Future<void> setVolume(double volume) async {
     final clampedVolume = volume.clamp(0.0, 1.0);
     await _audioPlayer.setVolume(clampedVolume);
-    debugPrint('[AudioController] Volume set to: $clampedVolume');
   }
 
   Future<void> stop() async {
@@ -207,5 +276,5 @@ class AudioController extends StateNotifier<AudioPlaybackStatus> {
 
 // Provider
 final audioControllerProvider = StateNotifierProvider<AudioController, AudioPlaybackStatus>((ref) {
-  return AudioController();
+  return AudioController(ref);
 });

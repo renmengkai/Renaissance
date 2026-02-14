@@ -44,4 +44,5 @@ Map<String, dynamic> _$$SongImplToJson(_$SongImpl instance) =>
 const _$MusicSourceTypeEnumMap = {
   MusicSourceType.local: 'local',
   MusicSourceType.cloud: 'cloud',
+  MusicSourceType.webdav: 'webdav',
 };

@@ -168,7 +168,7 @@ class LoFiMixerState {
   final bool hasWhiteNoise;
 
   const LoFiMixerState({
-    this.mainVolume = 1.0,
+    this.mainVolume = 0.5,
     this.activeTracks = const {},
     this.isInitialized = false,
     this.errorMessage,
@@ -231,8 +231,10 @@ class LoFiMixer extends StateNotifier<LoFiMixerState> {
       hasWhiteNoise: hasWhiteNoise,
     );
 
-    if (hasWhiteNoise) {
-      debugPrint('[LoFiMixer] Found ${whiteNoiseTracks.length} white noise tracks');
+    // 设置默认音量
+    try {
+      _ref.read(audioControllerProvider.notifier).setVolume(state.mainVolume);
+    } catch (e) {
     }
   }
 
@@ -262,8 +264,6 @@ class LoFiMixer extends StateNotifier<LoFiMixerState> {
   // 添加白噪音轨道
   Future<void> _addTrack(WhiteNoiseTrack track) async {
     try {
-      debugPrint('[LoFiMixer] Adding track: ${track.displayName}');
-
       final player = AudioPlayer();
       await player.setAsset(track.assetPath);
       await player.setLoopMode(LoopMode.all);
@@ -279,17 +279,8 @@ class LoFiMixer extends StateNotifier<LoFiMixerState> {
       final newTracks = Map<WhiteNoiseCategory, ActiveTrack>.from(state.activeTracks);
       newTracks[track.category] = activeTrack;
 
-      state = state.copyWith(
-        activeTracks: newTracks,
-        errorMessage: null,
-      );
-
-      debugPrint('[LoFiMixer] Track added: ${track.displayName}');
+      state = state.copyWith(activeTracks: newTracks);
     } catch (e) {
-      debugPrint('[LoFiMixer] Failed to add track: $e');
-      state = state.copyWith(
-        errorMessage: '加载白噪音失败: $e',
-      );
     }
   }
 
@@ -304,7 +295,6 @@ class LoFiMixer extends StateNotifier<LoFiMixerState> {
     newTracks.remove(category);
 
     state = state.copyWith(activeTracks: newTracks);
-    debugPrint('[LoFiMixer] Removed category: ${category.displayName}');
   }
 
   // 切换指定类别的白噪音文件（同类别内切换）
@@ -338,7 +328,6 @@ class LoFiMixer extends StateNotifier<LoFiMixerState> {
     try {
       _ref.read(audioControllerProvider.notifier).setVolume(clampedVolume);
     } catch (e) {
-      debugPrint('[LoFiMixer] Failed to set main volume: $e');
     }
   }
 

@@ -5,7 +5,8 @@ import '../models/song.dart';
 import '../models/music_source.dart';
 import '../models/playlist.dart';
 import 'local_music_service.dart';
-import 'cloud_music_service.dart';
+import 'cloud_music_service.dart' show ConnectionTestResult, CloudMusicService, CloudMusicConfig;
+import 'webdav_music_service.dart' hide ConnectionTestResult;
 import '../../../core/services/storage_service.dart';
 
 class MusicSourceManager extends StateNotifier<List<MusicSource>> {
@@ -13,6 +14,7 @@ class MusicSourceManager extends StateNotifier<List<MusicSource>> {
   static const String _activeSourceKey = 'active_music_source';
 
   final Map<String, CloudMusicService> _cloudServices = {};
+  final Map<String, WebDAVMusicService> _webdavServices = {};
 
   MusicSourceManager() : super([]) {
     _loadSources();
@@ -25,6 +27,7 @@ class MusicSourceManager extends StateNotifier<List<MusicSource>> {
           .map((json) => MusicSource.fromJson(jsonDecode(json)))
           .toList();
     } else {
+      // 默认只启用本地音乐
       state = [
         MusicSource(
           id: 'local_default',
@@ -103,14 +106,33 @@ class MusicSourceManager extends StateNotifier<List<MusicSource>> {
         final config = CloudMusicConfig(
           provider: source.cloudProvider ?? CloudProvider.custom,
           baseUrl: source.baseUrl!,
+          customDomain: source.customDomain,
           bucketName: source.bucketName,
+          accessKey: source.accessKey,
+          secretKey: source.secretKey,
+          region: source.region,
           customHeaders: source.customHeaders != null
               ? Map<String, String>.from(jsonDecode(source.customHeaders!))
               : null,
         );
         final service = _getOrCreateCloudService(config);
         return await service.fetchCloudSongs(source.id);
+
+      case MusicSourceType.webdav:
+        if (source.baseUrl == null) {
+          return [];
+        }
+        final webdavService = _getOrCreateWebDAVService(source);
+        return await webdavService.scanSongs();
     }
+  }
+
+  WebDAVMusicService _getOrCreateWebDAVService(MusicSource source) {
+    final key = source.id;
+    if (!_webdavServices.containsKey(key)) {
+      _webdavServices[key] = WebDAVMusicService(source: source);
+    }
+    return _webdavServices[key]!;
   }
 
   Future<Playlist> getPlaylistFromSource(MusicSource source) async {
@@ -136,17 +158,33 @@ class MusicSourceManager extends StateNotifier<List<MusicSource>> {
           createdAt: DateTime.now(),
           coverUrl: 'assets/images/cover1.jpg',
         );
+
+      case MusicSourceType.webdav:
+        return Playlist(
+          id: 'playlist_${source.id}',
+          name: source.name,
+          description: 'WebDAV: ${source.baseUrl ?? ""}',
+          songs: songs,
+          createdAt: DateTime.now(),
+          coverUrl: 'assets/images/cover1.jpg',
+        );
     }
   }
 
   Future<List<Song>> getAllSongs() async {
     final List<Song> allSongs = [];
+    final stopwatch = Stopwatch()..start();
 
     for (final source in state.where((s) => s.isEnabled)) {
+      final sourceStopwatch = Stopwatch()..start();
       final songs = await getSongsFromSource(source);
+      sourceStopwatch.stop();
+      debugPrint('[MusicSourceManager] Loaded ${songs.length} songs from ${source.name} (${source.type}) in ${sourceStopwatch.elapsedMilliseconds}ms');
       allSongs.addAll(songs);
     }
 
+    stopwatch.stop();
+    debugPrint('[MusicSourceManager] Total loaded ${allSongs.length} songs from all sources in ${stopwatch.elapsedMilliseconds}ms');
     return allSongs;
   }
 
@@ -161,14 +199,31 @@ class MusicSourceManager extends StateNotifier<List<MusicSource>> {
     return playlists;
   }
 
-  Future<bool> testCloudConnection(String url) async {
-    return await CloudMusicService.testConnection(url);
+  Future<ConnectionTestResult> testCloudConnection(
+    String url, {
+    String? accessKey,
+    String? secretKey,
+    String? bucketName,
+    String? region,
+  }) async {
+    return await CloudMusicService.testConnection(
+      url,
+      accessKey: accessKey,
+      secretKey: secretKey,
+      bucketName: bucketName,
+      region: region,
+    );
   }
 
   Future<MusicSource> addCloudSource({
     required String name,
     required String baseUrl,
+    String? customDomain,
     CloudProvider? provider,
+    String? bucketName,
+    String? accessKey,
+    String? secretKey,
+    String? region,
     Map<String, String>? customHeaders,
   }) async {
     final detectedProvider = provider ?? CloudProviderHelper.detectProviderFromUrl(baseUrl);
@@ -180,11 +235,47 @@ class MusicSourceManager extends StateNotifier<List<MusicSource>> {
       isEnabled: true,
       cloudProvider: detectedProvider,
       baseUrl: baseUrl,
+      customDomain: customDomain,
+      bucketName: bucketName,
+      accessKey: accessKey,
+      secretKey: secretKey,
+      region: region,
       customHeaders: customHeaders != null ? jsonEncode(customHeaders) : null,
     );
 
     await addSource(source);
     return source;
+  }
+
+  Future<String> getSignedUrlForSong(Song song) async {
+    // WebDAV 不需要签名，直接返回原始 URL
+    if (song.sourceType == MusicSourceType.webdav) {
+      return song.audioUrl;
+    }
+
+    if (song.sourceType != MusicSourceType.cloud || song.cloudKey == null || song.sourceId == null) {
+      return song.audioUrl;
+    }
+
+    final source = state.where((s) => s.id == song.sourceId).firstOrNull;
+    if (source == null || source.type != MusicSourceType.cloud) {
+      return song.audioUrl;
+    }
+
+    final config = CloudMusicConfig(
+      provider: source.cloudProvider ?? CloudProvider.custom,
+      baseUrl: source.baseUrl!,
+      customDomain: source.customDomain,
+      bucketName: source.bucketName,
+      accessKey: source.accessKey,
+      secretKey: source.secretKey,
+      region: source.region,
+    );
+
+    final service = _getOrCreateCloudService(config);
+    // 直接调用getPlaybackUrl方法，不需要await，因为它是同步方法
+    final signedUrl = service.getPlaybackUrl(song.cloudKey!);
+    return signedUrl;
   }
 
   @override

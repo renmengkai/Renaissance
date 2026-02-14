@@ -1,6 +1,8 @@
 import 'package:fluent_ui/fluent_ui.dart';
-import 'package:window_manager/window_manager.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/utils/platform_utils.dart';
+import 'window_controls_stub.dart'
+    if (dart.library.io) 'window_controls_impl.dart';
 
 class WindowTitleBar extends StatelessWidget {
   final String? title;
@@ -30,68 +32,102 @@ class WindowTitleBar extends StatelessWidget {
       ),
       child: Row(
         children: [
-          // 拖动区域
           Expanded(
-            child: DragToMoveArea(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Row(
-                  children: [
-                    if (showBackButton)
-                      IconButton(
-                        icon: const Icon(
-                          FluentIcons.back,
-                          size: 16,
-                          color: AppTheme.warmBeige,
-                        ),
-                        onPressed: onBackPressed,
-                      ),
-                    if (showBackButton)
-                      const SizedBox(width: 12),
-                    Icon(
-                      FluentIcons.music_note,
-                      size: 16,
-                      color: AppTheme.vintageGold,
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      title ?? '文艺复兴',
-                      style: const TextStyle(
-                        fontSize: 14,
-                        color: AppTheme.warmCream,
-                        letterSpacing: 2,
-                      ),
-                    ),
-                  ],
+            child: _buildDraggableArea(context),
+          ),
+          if (actions != null) ...actions!,
+          if (PlatformUtils.isDesktop) ...[
+            _WindowControlButton(
+              icon: FluentIcons.remove,
+              onPressed: () => minimizeWindow(),
+            ),
+            _WindowControlButton(
+              icon: FluentIcons.square,
+              onPressed: () async {
+                if (await isWindowMaximized()) {
+                  await unmaximizeWindow();
+                } else {
+                  await maximizeWindow();
+                }
+              },
+            ),
+            _WindowControlButton(
+              icon: FluentIcons.chrome_close,
+              isClose: true,
+              onPressed: () => closeWindow(),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDraggableArea(BuildContext context) {
+    if (!PlatformUtils.isDesktop) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        child: Row(
+          children: [
+            if (showBackButton)
+              IconButton(
+                icon: const Icon(
+                  FluentIcons.back,
+                  size: 16,
+                  color: AppTheme.warmBeige,
                 ),
+                onPressed: onBackPressed,
+              ),
+            if (showBackButton) const SizedBox(width: 12),
+            Icon(
+              FluentIcons.music_note,
+              size: 16,
+              color: AppTheme.vintageGold,
+            ),
+            const SizedBox(width: 8),
+            Text(
+              title ?? '文艺复兴',
+              style: const TextStyle(
+                fontSize: 14,
+                color: AppTheme.warmCream,
+                letterSpacing: 2,
               ),
             ),
-          ),
+          ],
+        ),
+      );
+    }
 
-          // 自定义操作按钮
-          if (actions != null) ...actions!,
-
-          // 窗口控制按钮
-          _WindowControlButton(
-            icon: FluentIcons.remove,
-            onPressed: () => windowManager.minimize(),
-          ),
-          _WindowControlButton(
-            icon: FluentIcons.square,
-            onPressed: () async {
-              if (await windowManager.isMaximized()) {
-                await windowManager.unmaximize();
-              } else {
-                await windowManager.maximize();
-              }
-            },
-          ),
-          _WindowControlButton(
-            icon: FluentIcons.chrome_close,
-            isClose: true,
-            onPressed: () => windowManager.close(),
-          ),
-        ],
+    return DragToMoveArea(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        child: Row(
+          children: [
+            if (showBackButton)
+              IconButton(
+                icon: const Icon(
+                  FluentIcons.back,
+                  size: 16,
+                  color: AppTheme.warmBeige,
+                ),
+                onPressed: onBackPressed,
+              ),
+            if (showBackButton) const SizedBox(width: 12),
+            Icon(
+              FluentIcons.music_note,
+              size: 16,
+              color: AppTheme.vintageGold,
+            ),
+            const SizedBox(width: 8),
+            Text(
+              title ?? '文艺复兴',
+              style: const TextStyle(
+                fontSize: 14,
+                color: AppTheme.warmCream,
+                letterSpacing: 2,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

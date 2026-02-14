@@ -14,9 +14,16 @@ _$MusicSourceImpl _$$MusicSourceImplFromJson(Map<String, dynamic> json) =>
       isEnabled: json['isEnabled'] as bool,
       cloudProvider:
           $enumDecodeNullable(_$CloudProviderEnumMap, json['cloudProvider']),
+      webdavProvider:
+          $enumDecodeNullable(_$WebDAVProviderEnumMap, json['webdavProvider']),
       baseUrl: json['baseUrl'] as String?,
+      customDomain: json['customDomain'] as String?,
       bucketName: json['bucketName'] as String?,
+      accessKey: json['accessKey'] as String?,
+      secretKey: json['secretKey'] as String?,
+      region: json['region'] as String?,
       customHeaders: json['customHeaders'] as String?,
+      webdavPath: json['webdavPath'] as String?,
       lastSyncTime: json['lastSyncTime'] == null
           ? null
           : DateTime.parse(json['lastSyncTime'] as String),
@@ -30,9 +37,15 @@ Map<String, dynamic> _$$MusicSourceImplToJson(_$MusicSourceImpl instance) =>
       'type': _$MusicSourceTypeEnumMap[instance.type]!,
       'isEnabled': instance.isEnabled,
       'cloudProvider': _$CloudProviderEnumMap[instance.cloudProvider],
+      'webdavProvider': _$WebDAVProviderEnumMap[instance.webdavProvider],
       'baseUrl': instance.baseUrl,
+      'customDomain': instance.customDomain,
       'bucketName': instance.bucketName,
+      'accessKey': instance.accessKey,
+      'secretKey': instance.secretKey,
+      'region': instance.region,
       'customHeaders': instance.customHeaders,
+      'webdavPath': instance.webdavPath,
       'lastSyncTime': instance.lastSyncTime?.toIso8601String(),
       'songCount': instance.songCount,
     };
@@ -40,13 +53,22 @@ Map<String, dynamic> _$$MusicSourceImplToJson(_$MusicSourceImpl instance) =>
 const _$MusicSourceTypeEnumMap = {
   MusicSourceType.local: 'local',
   MusicSourceType.cloud: 'cloud',
+  MusicSourceType.webdav: 'webdav',
 };
 
 const _$CloudProviderEnumMap = {
   CloudProvider.qiniu: 'qiniu',
   CloudProvider.aliyun: 'aliyun',
   CloudProvider.tencent: 'tencent',
+  CloudProvider.xunlei: 'xunlei',
   CloudProvider.custom: 'custom',
+};
+
+const _$WebDAVProviderEnumMap = {
+  WebDAVProvider.aliyunDrive: 'aliyunDrive',
+  WebDAVProvider.teambition: 'teambition',
+  WebDAVProvider.terabox: 'terabox',
+  WebDAVProvider.custom: 'custom',
 };
 
 _$CloudMusicConfigImpl _$$CloudMusicConfigImplFromJson(
@@ -54,6 +76,7 @@ _$CloudMusicConfigImpl _$$CloudMusicConfigImplFromJson(
     _$CloudMusicConfigImpl(
       provider: $enumDecode(_$CloudProviderEnumMap, json['provider']),
       baseUrl: json['baseUrl'] as String,
+      customDomain: json['customDomain'] as String?,
       bucketName: json['bucketName'] as String?,
       accessKey: json['accessKey'] as String?,
       secretKey: json['secretKey'] as String?,
@@ -71,6 +94,7 @@ Map<String, dynamic> _$$CloudMusicConfigImplToJson(
     <String, dynamic>{
       'provider': _$CloudProviderEnumMap[instance.provider]!,
       'baseUrl': instance.baseUrl,
+      'customDomain': instance.customDomain,
       'bucketName': instance.bucketName,
       'accessKey': instance.accessKey,
       'secretKey': instance.secretKey,

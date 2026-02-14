@@ -83,34 +83,38 @@ class _VintageToggleSwitchState extends State<VintageToggleSwitch>
             borderRadius: BorderRadius.circular(12),
           ),
           child: Row(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    if (widget.label != null)
-                      Text(
-                        widget.label!,
-                        style: const TextStyle(
-                          color: AppTheme.warmCream,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
+              if (widget.label != null || widget.description != null)
+                Flexible(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (widget.label != null)
+                        Text(
+                          widget.label!,
+                          style: const TextStyle(
+                            color: AppTheme.warmCream,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                          ),
                         ),
-                      ),
-                    if (widget.description != null) ...[
-                      const SizedBox(height: 4),
-                      Text(
-                        widget.description!,
-                        style: TextStyle(
-                          color: AppTheme.warmBeige.withOpacity(0.6),
-                          fontSize: 12,
+                      if (widget.description != null) ...[
+                        const SizedBox(height: 4),
+                        Text(
+                          widget.description!,
+                          style: TextStyle(
+                            color: AppTheme.warmBeige.withOpacity(0.6),
+                            fontSize: 12,
+                          ),
                         ),
-                      ),
+                      ],
                     ],
-                  ],
+                  ),
                 ),
-              ),
-              const SizedBox(width: 16),
+              if (widget.label != null || widget.description != null)
+                const SizedBox(width: 16),
               _buildSwitch(),
             ],
           ),
@@ -310,17 +314,21 @@ class _VintageSliderState extends State<VintageSlider> {
               _updateValue(details.localPosition.dx, box.size.width);
               HapticFeedback.lightImpact();
             },
-            child: Container(
-              height: 28,
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              child: CustomPaint(
-                size: Size.infinite,
-                painter: _VintageSliderPainter(
-                  value: (_currentValue - widget.min) / (widget.max - widget.min),
-                  isHovered: _isHovered,
-                  isDragging: _isDragging,
-                ),
-              ),
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                return Container(
+                  height: 28,
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  child: CustomPaint(
+                    size: Size(constraints.maxWidth, 12),
+                    painter: _VintageSliderPainter(
+                      value: (_currentValue - widget.min) / (widget.max - widget.min),
+                      isHovered: _isHovered,
+                      isDragging: _isDragging,
+                    ),
+                  ),
+                );
+              },
             ),
           ),
         ],
@@ -610,7 +618,7 @@ class _GlassCardState extends State<GlassCard> {
           ],
         ),
       ),
-    ).animate().fadeIn(duration: 300.ms).slideY(begin: 0.05, end: 0);
+    );
   }
 }
 
