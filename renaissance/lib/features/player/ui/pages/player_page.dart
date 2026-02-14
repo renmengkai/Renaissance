@@ -6,6 +6,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:window_manager/window_manager.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/platform_utils.dart';
+import '../../../../core/services/storage_service.dart';
 import '../../../../shared/components/window_controls_stub.dart'
     if (dart.library.io) '../../../../shared/components/window_controls_impl.dart';
 import '../../../blindbox/blur/blurred_cover.dart';
@@ -128,26 +129,33 @@ class _PlayerPageState extends ConsumerState<PlayerPage> {
     stopwatch.stop();
     debugPrint('[PlayerPage] Loaded ${songs.length} songs in ${stopwatch.elapsedMilliseconds}ms');
 
-    // 设置封面加载回调，当异步加载完成时更新UI
-    CoverArtService().onCoverLoaded = (song, coverPath) {
-      if (mounted && coverPath.isNotEmpty) {
-        setState(() {
-          _songCoverCache[song.id] = coverPath;
-        });
-      }
-    };
+    // 检查是否启用了封面同步加载
+    final enableSyncCoverLoading = StorageService.getBool(StorageKeys.enableSyncCoverLoading) ?? false;
 
-    // 异步预加载封面，不阻塞UI
-    // 注意：preloadCovers 已经在后台异步加载封面到 CoverArtService 的内存缓存
-    CoverArtService().preloadCovers(songs);
+    if (enableSyncCoverLoading) {
+      // 设置封面加载回调，当异步加载完成时更新UI
+      CoverArtService().onCoverLoaded = (song, coverPath) {
+        if (mounted && coverPath.isNotEmpty) {
+          setState(() {
+            _songCoverCache[song.id] = coverPath;
+          });
+        }
+      };
 
-    // 延迟加载封面到UI缓存，确保不阻塞歌曲加载和播放
-    // 使用延迟执行，让歌曲列表先显示出来
-    Future.delayed(const Duration(milliseconds: 500), () {
-      if (mounted) {
-        _loadSongCovers(songs);
-      }
-    });
+      // 异步预加载封面，不阻塞UI
+      // 注意：preloadCovers 已经在后台异步加载封面到 CoverArtService 的内存缓存
+      CoverArtService().preloadCovers(songs);
+
+      // 延迟加载封面到UI缓存，确保不阻塞歌曲加载和播放
+      // 使用延迟执行，让歌曲列表先显示出来
+      Future.delayed(const Duration(milliseconds: 500), () {
+        if (mounted) {
+          _loadSongCovers(songs);
+        }
+      });
+    } else {
+      debugPrint('[PlayerPage] Sync cover loading is disabled, skipping cover preloading');
+    }
 
     // 自动连续加载模式：如果还有更多数据，自动开始加载下一页
     if (_autoLoadMode && _hasMoreData && songs.length >= _pageSize) {

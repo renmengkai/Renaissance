@@ -152,4 +152,7 @@ class StorageKeys {
   static const String musicSources = 'music_sources';
   static const String activeMusicSource = 'active_music_source';
   static const String cloudMusicConfig = 'cloud_music_config';
+
+  // 封面加载设置
+  static const String enableSyncCoverLoading = 'enable_sync_cover_loading';
 }

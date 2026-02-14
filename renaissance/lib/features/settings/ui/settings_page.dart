@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/platform_utils.dart';
+import '../../../core/services/storage_service.dart';
 import '../../../shared/widgets/vintage_settings.dart';
 import '../../player/ui/music_source_settings.dart';
 
@@ -19,6 +20,7 @@ class SettingsState {
   final bool autoPlay;
   final bool crossfade;
   final double crossfadeDuration;
+  final bool enableSyncCoverLoading;
 
   const SettingsState({
     this.masterVolume = 0.5,
@@ -30,6 +32,7 @@ class SettingsState {
     this.autoPlay = false,
     this.crossfade = true,
     this.crossfadeDuration = 2.0,
+    this.enableSyncCoverLoading = false,
   });
 
   SettingsState copyWith({
@@ -42,6 +45,7 @@ class SettingsState {
     bool? autoPlay,
     bool? crossfade,
     double? crossfadeDuration,
+    bool? enableSyncCoverLoading,
   }) {
     return SettingsState(
       masterVolume: masterVolume ?? this.masterVolume,
@@ -53,12 +57,16 @@ class SettingsState {
       autoPlay: autoPlay ?? this.autoPlay,
       crossfade: crossfade ?? this.crossfade,
       crossfadeDuration: crossfadeDuration ?? this.crossfadeDuration,
+      enableSyncCoverLoading: enableSyncCoverLoading ?? this.enableSyncCoverLoading,
     );
   }
 }
 
 class SettingsController extends StateNotifier<SettingsState> {
-  SettingsController() : super(const SettingsState());
+  SettingsController() : super(const SettingsState()) {
+    // 初始化时从本地存储加载设置
+    loadSettings();
+  }
 
   void setMasterVolume(double volume) {
     state = state.copyWith(masterVolume: volume);
@@ -94,6 +102,19 @@ class SettingsController extends StateNotifier<SettingsState> {
 
   void setCrossfadeDuration(double duration) {
     state = state.copyWith(crossfadeDuration: duration);
+  }
+
+  void toggleSyncCoverLoading() {
+    final newValue = !state.enableSyncCoverLoading;
+    state = state.copyWith(enableSyncCoverLoading: newValue);
+    // 持久化到本地存储
+    StorageService.setBool(StorageKeys.enableSyncCoverLoading, newValue);
+  }
+
+  /// 从本地存储加载设置
+  void loadSettings() {
+    final enableSyncCoverLoading = StorageService.getBool(StorageKeys.enableSyncCoverLoading) ?? false;
+    state = state.copyWith(enableSyncCoverLoading: enableSyncCoverLoading);
   }
 }
 
@@ -281,6 +302,13 @@ class SettingsPage extends ConsumerWidget {
                 description: '显示同步歌词',
                 value: settings.enableLyrics,
                 onChanged: (_) => controller.toggleLyrics(),
+              ),
+              const SizedBox(height: 12),
+              VintageToggleSwitch(
+                label: '同步加载歌曲封面',
+                description: '在歌曲列表中显示封面图片（可能影响音乐播放流畅度）',
+                value: settings.enableSyncCoverLoading,
+                onChanged: (_) => controller.toggleSyncCoverLoading(),
               ),
             ],
           ),
