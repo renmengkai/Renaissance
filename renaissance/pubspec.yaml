@@ -83,11 +83,20 @@ dev_dependencies:
   # objectbox_generator: ^2.4.0
   custom_lint: ^0.5.7
   riverpod_lint: ^2.3.7
+  msix: ^3.16.7
 
 flutter:
   uses-material-design: true
-  
+
   assets:
     - assets/audio/
     - assets/images/
     - assets/shaders/
+
+msix_config:
+  display_name: 文艺复兴
+  publisher_display_name: Renaissance Team
+  identity_name: com.renaissance.app
+  msix_version: 1.0.0.0
+  logo_path: assets/images/app_icon_256.png
+  capabilities: internetClient, location, microphone
